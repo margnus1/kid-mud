@@ -1,0 +1,14 @@
+command <- logout_command / move_command / look_command;
+
+look_command <- "look" / "l" `look`;
+
+logout_command <- "logout" `logout`;
+
+move_command <- move direction;
+move <- "go " / "move " / "" `go`;
+direction <- north / east / west / south;
+north <- "north" / "n" `north`;
+east <- "east" / "e" `east`;
+west <- "west" / "w" `west`;
+south <- "south" / "s" `south`;
+
