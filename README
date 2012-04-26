@@ -1,1 +1,8 @@
 An Erlang MUD
+
+git pull 
+
+git add FILES
+git commit -m "TEXT"
+git push
+
