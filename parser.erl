@@ -3,6 +3,10 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% @doc Parses a user command string into a usable representation
+%% @spec parse(String::string() | bitstring()) -> Command | parse_error
+%% where
+%%       Command = {go, Direction} | look | logout
+%%       Direction = north | east | south | west
 parse(String) ->
     case parser_grammar:parse(String) of
         List when is_list(List) ->
