@@ -26,6 +26,7 @@ ARCHIVE_DIR := ..
 all: $(BEAM_FILES)
 
 ebin/%.beam: src/%.erl
+	@-mkdir -p ebin
 	$(ERLC) $(ERLC_FLAGS) -o ebin $<
 
 start: all
