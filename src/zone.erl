@@ -1,16 +1,13 @@
 -module(zone).
--export([start/0,loop/1]).
-
+-export([start/0,loop/2]).
+-include("zone.hrl").
 
 
 start() ->
-    Exits = masterzone:tempDatabase(self(),1), %% Should load from DB
-    NPC =  masterzone:tempDatabase(self(),2), %% Should load from DB
-    Desc =  masterzone:tempDatabase(self(),3), %% Should load from DB
+    Data = database:read_zone(Id).
     Players = [{1,2},{3,4},{5,7}], %% Should load from DB
 
-    State = {Exits,NPC,Desc,Players},
-    spawn(zone, loop, [State]).
+    spawn(zone, loop, [Players, Data]).
 
 
 messagePlayers(List, Playername, Direction, Notice) ->
@@ -21,11 +18,7 @@ messagePlayers(List, Playername, Notice) ->
     lists:foldl(fun ({Player, Name}, _) -> io:format("Player ! {Notice, Playername}~n"), ok end, ok, List).
 
 
-store_db(State) ->
-    io:format("Stored this in the DB: ~p~n",[State]).
-
-
-loop(State = {Exits,NPC,Desc,Players}) ->
+loop(Players, Data = #zone{exits=Exits,npc=NPC,desc=Desc}) ->
     %% self() ! {enter, self(), 'Ericigen', north},
     %% self() ! {logout, 1, 2},
     receive 
@@ -38,7 +31,7 @@ loop(State = {Exits,NPC,Desc,Players}) ->
 	    if DirectionID =:= none ->
 		    io:format("Player ! {go,error,doesntexist}~n"),
 	       %% Player ! {go,error,doesntexist}
-	       loop(State);
+	       loop(Players, Data);
 
 	       true -> 
 		    io:format("Player ! {go, DirectionID}~n"),
@@ -52,7 +45,7 @@ loop(State = {Exits,NPC,Desc,Players}) ->
 		    %% Send a notification to the other players
 		    messagePlayers(UpdatedPlayers, Name, Direction, exitnotification),
 
-		    loop({Exits,NPC,Desc,UpdatedPlayers})
+		    loop(UpdatedPlayers, Data)
 	    end;
 
 	%% Look command from a player
@@ -60,7 +53,7 @@ loop(State = {Exits,NPC,Desc,Players}) ->
 	    io:format("~p~n",[Desc]),
 	    io:format("Player ! {look, Desc}~n"),
 	    %% Player ! {look, Desc}
-	    loop(State);
+	    loop(Players, Data);
 
 	%% A new player enters the zone
 	{enter, Player, Name, Direction} ->
@@ -73,10 +66,10 @@ loop(State = {Exits,NPC,Desc,Players}) ->
 	    messagePlayers(Players, Name, Direction, enternotification),
 
 	    %% Adds the player to the players list
-	    NewPlayers = Players ++ [{Player, Name}],
-	    io:format(" ~p~n",[NewPlayers]),
+	    UpdatedPlayers = [{Player, Name} | Players],
+	    io:format(" ~p~n",[UpdatedPlayers]),
 
-	    loop({Exits,NPC,Desc,NewPlayers});
+	    loop(UpdatedPlayers, Data);
 
 	%% A logout command from a player
 	{logout, Player, Name} ->
@@ -87,10 +80,10 @@ loop(State = {Exits,NPC,Desc,Players}) ->
 	    %% Send a notification to the other players
 	    messagePlayers(UpdatedPlayers, Name, logoutnotification),
 
-	    loop({Exits,NPC,Desc,UpdatedPlayers})
+	    loop(UpdatedPlayers, Data)
 
 	%% A inactivate command from the masterzone
 	%% {inactivate} -> 
-	%%    store_db(State),
+	%%    database:write_zone(State),
 	%%    ok
     end.

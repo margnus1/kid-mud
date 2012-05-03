@@ -1,0 +1,2 @@
+-record(player, {name, location}).
+
