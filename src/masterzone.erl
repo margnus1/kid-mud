@@ -16,7 +16,7 @@ tempDatabase(Pid,Num) -> %% TEMPORARY FUNCTION
 	NPC = [arne],
 	Pid ! NPC;
 	Num =:= 3 -> 
-	Desc = ["hÃ¤r Ã¤r en text"],
+	Desc = ["här är en text"],
 	Pid ! Desc
 	end.
 	
@@ -44,7 +44,7 @@ loop(Tree) ->
 			
 		end;
 
-		{zone_inactive,Id} ->
+		{zone_inactive, Id} ->
 			Y =  gb_trees:lookup(Id,Tree),
 		if Y =:= none ->
 			%% This shouldn't happen!!
@@ -53,6 +53,8 @@ loop(Tree) ->
 			
 		true ->
 			NewTree = gb_trees:delete(Id,Tree),
+			
+			
 			loop(NewTree)
 		end
 
