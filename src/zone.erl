@@ -30,7 +30,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPC, desc=Desc}) ->
 	    if DirectionID =:= none ->
 		    io:format("Player ! {go,error,doesntexist}~n"),
 		    %% Player ! {go,error,doesntexist}
-		    loop(Players, Data);
+		    loop (Players, Data);
 
 	       true -> 
 		    io:format("Player ! {go, DirectionID}~n"),
@@ -46,7 +46,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPC, desc=Desc}) ->
 		    %% Check if the zone is empty		    
 		    if UpdatedPlayers =:= [] ->
 			    database:write_zone(Data),
-			    masterzone ! {zone_inactive, Id},
+			    zonemaster ! {zone_inactive, Id},
 			    ok;
 
 		       true ->
@@ -57,15 +57,14 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPC, desc=Desc}) ->
 
 	%% Look command from a player
 	{look, Player} -> 
-	    io:format("Player ! {look, Desc}~n"),
-	    %% Player ! {look, Desc}
+	    Player ! {look, Desc},
 	    loop(Players, Data);
 
 	%% A new player enters the zone
 	{enter, Player, Name, Direction} ->
 	    %% Sends the description to the player
 	    io:format("Player ! {look, Desc}~n"),
-	    %% Player ! {look, Desc}
+	    Player ! {look, Desc}
 
 	    %% Sends the player the other players
 	    messagePlayer(Players, Player, player_in_zone_notification),
@@ -75,7 +74,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPC, desc=Desc}) ->
 
 	    %% Adds the player to the players list
 	    UpdatedPlayers = [{Player, Name} | Players],
-	    io:format(" ~p~n",[UpdatedPlayers]),
+	    %% io:format(" ~p~n",[UpdatedPlayers]),
 
 	    loop(UpdatedPlayers, Data);
 
@@ -91,7 +90,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPC, desc=Desc}) ->
 	    %% Check if the zone is empty
 	    if UpdatedPlayers =:= [] ->
 		    database:write_zone(Data),
-		    masterzone ! {zone_inactive, Id},
+		    zonemaster ! {zone_inactive, Id},
 		    ok;
 
 	       true ->

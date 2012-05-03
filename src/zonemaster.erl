@@ -1,10 +1,11 @@
--module(masterzone).
--export([start/0]).
+-module(zonemaster).
+-export([start/0, loop/1, get_zone/1]).
 
 start() ->
-	X = self(),
-	Tree = gb_trees:empty(),
-	loop(Tree).
+    Tree = gb_trees:empty(),
+    Id = spawn(zonemaster, loop, [Tree]),
+    register(zonemaster, Id),
+    Id.
 
 
 loop(ActiveZonesTree) ->
@@ -18,12 +19,12 @@ loop(ActiveZonesTree) ->
 
 
 		    %% Send {zone,ZonePid} to player.
-		    %% Player ! {zone,ZonePid}
+		    Player ! {zone,ZonePid},
 		    loop(NewTree);
 	       true ->
 		    {_,{_,Pid}} = X,
 		    %% Send {zone,Pid} to player.
-		    %% Player ! {zone,Pid},
+		    Player ! {zone,Pid},
 		    loop(ActiveZonesTree)
 
 	    end;
@@ -42,5 +43,10 @@ loop(ActiveZonesTree) ->
 
     end.
 
-
+get_zone(Id) ->
+    zonemaster ! {get_zone, self(), Id},
+    receive 
+	{zone, Zone} ->
+	    Zone
+    end.
 
