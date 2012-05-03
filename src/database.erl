@@ -1,9 +1,9 @@
 -module(database).
 -export([read_player/1, write_player/1, read_zone/1, write_zone/1, start/0, stop/0, setup/0]).
-% % @doc Kid-MUD database interface
-
 -include("zone.hrl").
 -include("player.hrl").
+
+-include_lib("eunit/include/eunit.hrl").
 
 %% @doc
 %%     Reads the player with the name Name from the database.
@@ -64,12 +64,34 @@ stop() ->
 setup() ->
     mnesia:create_schema([node()]),
     ok = mnesia:start(),
-    {atomic, ok} = mnesia:create_table(player,
-				       [{attributes, record_info(fields, player)},
-                                        {disc_copies, [node()]}]),
-    {atomic, ok} = mnesia:create_table(zone,
-				       [{attributes, record_info(fields, zone)},
-                                        {disc_copies, [node()]}]),
+    create_tables([{disc_copies, [node()]}]),
     write_zone(#zone{id=0, desc="You are in a dark room"}),
     mnesia:stop(),
     ok.
+
+%% @doc Creates the required tables in the mnesia database.
+%%      Uses the options in Options in addition to the individual options.
+%% @end
+create_tables(Options) ->
+    {atomic, ok} = mnesia:create_table(player,
+			[{attributes, record_info(fields, player)}] ++ Options),
+    {atomic, ok} = mnesia:create_table(zone,
+			[{attributes, record_info(fields, zone)}] ++ Options),
+    ok.
+
+%% @hidden
+test_setup() ->
+    mnesia:start(),
+    create_tables([]).
+
+%% @hidden
+database_test_() ->
+    Korv = #player{name="Korv", location=2},
+    Five = #zone{id=5, desc="asd"},
+    {setup, fun test_setup/0, 
+     [fun() -> write_player(Korv),
+               ?assertEqual(Korv, read_player("Korv")) end,
+      ?_assertEqual(#player{name="Gustav"}, read_player("Gustav")),
+      ?_assertEqual(read_zone(0), zone_not_found),
+      fun() -> write_zone(Five),
+               ?assertEqual(read_zone(5), Five) end]}.
