@@ -1,6 +1,6 @@
 -module(database).
 -export([read_player/1, write_player/1, read_zone/1, write_zone/1, start/0, stop/0, setup/0]).
-%% @doc Kid-MUD database interface
+% % @doc Kid-MUD database interface
 
 -include("zone.hrl").
 -include("player.hrl").
@@ -10,6 +10,7 @@
 %%     A default player is returned if it does not already exist
 %% @end
 %% @spec read_player(Name::string()) -> player()
+%% @type player() = #player {name=string(), location=integer()}
 read_player(Name) ->
     Trans = fun() -> mnesia:read(player, Name) end,
     case mnesia:transaction(Trans) of
@@ -28,6 +29,8 @@ write_player(Player) ->
 
 %% @doc Reads the zone with id Id from database
 %% @spec read_zone(Id::integer()) -> zone() | zone_not_found
+%% @type zone() = #zone {id=integer(), exits=[exit()], npc=[npc()], desc=string()}
+%% @type exit() = {Direction :: north | east | south | west, Id :: integer() | none}
 read_zone(Id) ->
     Trans = fun() -> mnesia:read(zone, Id) end,
     case mnesia:transaction(Trans) of
@@ -55,7 +58,7 @@ stop() ->
     ok.
 
 %% @doc Performs first-time initialisation of database.
-%%      Requires a schema to be configured for mnesia
+%%      mnesia must not be running
 %% @end
 %% @spec setup() -> ok
 setup() ->
