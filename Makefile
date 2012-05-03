@@ -29,8 +29,18 @@ ebin/%.beam: src/%.erl
 	@-mkdir -p ebin
 	$(ERLC) $(ERLC_FLAGS) -o ebin $<
 
-start: all
-	(cd ebin && erl -eval 'foo:start(), init:stop()')
+start_client: all
+	@echo "Connect by typing \"client:connect('kidserver@<Server-Name>').\""
+	@echo " and pressing enter (replace <Server-Name> with the name of the server)."
+	@echo " ------ "
+	erl -sname kidclient -pa ebin
+
+start_server: all
+	erl -sname kidserver -noshell -pa ebin -mnesia dir database -s database -s zonemaster
+
+setup: all
+	mkdir database
+	erl -sname kidserver -noshell -pa ebin -mnesia dir database -s database setup -s erlang halt
 
 src/parser_grammar.erl: src/parser_grammar.peg
 	erl -noshell -pa neotoma/ebin -eval "neotoma:file(\"src/parser_grammar.peg\")" -s erlang halt
