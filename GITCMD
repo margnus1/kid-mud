@@ -1,6 +1,5 @@
-An Erlang MUD
-
 git pull 
+git status
 
 git add FILES
 git commit -m "TEXT"
