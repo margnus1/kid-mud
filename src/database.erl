@@ -4,10 +4,17 @@
 -include("player.hrl").
 
 read_player(Name) ->
-    ok.
+    Trans = fun() -> mnesia:read(player, Name) end,
+    case mnesia:transaction(Trans) of
+	{atomic, [Player]} ->
+	    Player;
+	{atomic, []} ->
+	    #player{name=Name}
+    end.
 
-write_player(Player = #player{name=Name}) ->
-    %%mnesia:transaction
+write_player(Player) ->
+    Trans = fun() -> mnesia:write(player, Player, write) end,
+    {atomic, ok} = mnesia:transaction(Trans),
     ok.
 
 read_zone(Id) ->
@@ -15,7 +22,7 @@ read_zone(Id) ->
     case mnesia:transaction(Trans) of
 	{atomic, [Zone]} ->
 		Zone;
-	_ -> zone_not_found
+	{atomic, []} -> zone_not_found
     end.
 
 write_zone(Zone) ->

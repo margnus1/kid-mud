@@ -1,2 +1,2 @@
--record(player, {name, location}).
+-record(player, {name, location=0}).
 
