@@ -1,15 +1,38 @@
 -module(player).
 -export([login/2]).
--record(player, {name, client}).
+-include("player.hrl").
 
+-include_lib("eunit/include/eunit.hrl").
+
+%% @doc Load the player with the name Name from the database and spawn a process for that player
 login(Name, Console) ->
-	    P = #player {name = Name, client = Console},
-	    spawn(fun() -> loop(P) end).
-	  
-%% Ska ändras till en 2-tupel, sessionsdata-record och databasdatarecord    
-loop(P) -> 
-	receive {message, Message} ->
-	       	  io:format("Message"),
-       	       	  loop(P)
-       	end.
-		
+    
+    Player = database:read_player(Name),
+    spawn(fun() -> loop(Console, zonemaster:get_zone(Player#player.location), Player) end).
+
+loop(Console, ZonePID, Player) ->
+    receive {command, Command} ->
+            case cmd = parser:parse(Command) of
+                {go, Direction} ->
+                    ZonePID ! {go, self(), Direction},
+		    receive {go, Id} ->
+			    Player = #player{location = Id},
+			    %% TODO: se till att man får veta vart man gick
+			    Console ! {message, "You successfully moved"},
+			    loop(Console, zonemaster:get_zone(Id), Player);
+                            {go, error, doesnotexist} ->
+                            Console ! {message, "You cannot go that way"}
+                    end;
+
+                logout ->
+                    database:write_player(Player);
+                look ->
+                    ZonePID ! {look, self()},
+                    receive {look, Description} ->
+                            Console ! {message, Description};
+			    parse_error ->
+                            Console ! {message, "Command not recognized"}
+		    end
+	    end,
+	    loop(Console, ZonePID, Player)
+    end.
