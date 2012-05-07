@@ -17,7 +17,7 @@ loop(ActiveZonesTree) ->
 	    ActiveZone =  gb_trees:lookup(Id,ActiveZonesTree),
 	    if ActiveZone =:= none ->
 		    %% Spawn a new zone
-		    ZonePid = spawn(zone,start,[Id]),%%får man rätt pid här för zone kör ju spawn också?
+		    ZonePid = zone:start(Id),
 		    NewTree = gb_trees:insert(gb_trees:size(ActiveZonesTree),{Id,ZonePid},ActiveZonesTree),
 
 		    %% Send the zone info to the player
