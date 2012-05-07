@@ -111,11 +111,51 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	    Player ! {look, exits_message(Exits)},
 	    loop(Players, Data);
 
+	%% A 'kick' command from somewhere
+	{kick, Name} ->
+
+	    case lists:keyfind(Name, 2, Players) of 
+
+		{Player,_} ->
+
+		    %% Remove the player from the player list,
+		    UpdatedPlayers = lists:delete({Player,Name}, Players), 
+
+		    %% Check if the zone is empty
+		    if UpdatedPlayers =:= [] ->
+			    %% Store and close
+			    database:write_zone(Data),
+			    zonemaster ! {zone_inactive, Id},
+			    ok;
+
+		       true ->
+			    %% Send a notification to the other players
+			    messagePlayers(UpdatedPlayers, Name, player_logout),
+
+			    loop(UpdatedPlayers, Data)
+		    end;
+
+		false ->
+		    loop(Players, Data)
+	    end;
+
 	%% A 'drop item' command from a player
 	%% A 'take item' command from a player
 	%% A 'con target' command from a player (consider)
-	%% A 'attack/kill target' command from a player
+	%% A 'inspect target' command from a player
 	%% A 'look target' command from a player
+
+	%% A 'attack/kill target' command from a player
+	%%{attack, Player, Target, Damage, Hit} ->
+	%% Calculate if he hits the target
+
+	%% Calculate the damage to the target if he hits
+
+	%% Message the outcome to the player that is being attacked (if any)
+
+	%% Message the outcome to the other players
+	%%{_, Name} = lists:keyfind(Player, 1, Players),
+	%%messagePlayers(lists:keydelete(Player, 1, Players), Name, Target, Damage, player_attack);
 
 	%% A 'say line' command from a player
 	{say, Player, Message} -> 
