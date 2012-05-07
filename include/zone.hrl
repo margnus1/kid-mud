@@ -1,4 +1,12 @@
-%% @type zone() -> #zone {id=integer(), exits=[exit()], npc=[npc()], desc=string()}
-%% @type exit() -> {Direction :: north | east | south | west, Id :: integer() | none}
--record(zone, {id, exits=[{east, none}, {west, none}, {north, none}, {south, none}], npc=[], desc=""}).
+-type exit() :: {Direction :: north | east | south | west, Id :: integer()}.
+-record(zone, {id, desc="", npc=[], items=[], exits=[]}).
+-type zone() :: #zone {id :: integer(), desc :: string(), npc :: [integer()], items :: [{integer(), integer()}], exits :: [exit()]}.
 
+-record(npc, {id, name}).
+-type npc() :: #npc {id :: integer(), name :: string()}.
+
+-record(item, {id, name}).
+-type item() :: #item {id :: integer, name :: string()}.
+
+%%placeholder to maek compiler happy
+-type player() :: any().

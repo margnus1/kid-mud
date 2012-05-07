@@ -5,10 +5,13 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% @doc Load the player with the name Name from the database and spawn a process for that player
-%% @spec login(Name::string(), Console:pid() -> pid())
+-spec login(Name::string(), Console::pid()) -> pid().
 login(Name, Console) ->
     Player = database:read_player(Name),
-    spawn(fun() -> loop(Console, zonemaster:get_zone(Player#player.location), Player) end).
+    ZoneID = zonemaster:get_zone(Player#player.location),
+    Pid = spawn(fun() -> loop(Console, ZoneID, Player) end),
+    ZoneID ! {enter, Pid, Name, login},
+    Pid.
 
 loop(Console, ZonePID, Player) ->
     receive 
@@ -20,10 +23,14 @@ loop(Console, ZonePID, Player) ->
 			{go, Id} ->
 			    Player = #player{location = Id},
 			    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
-			    loop(Console, zonemaster:get_zone(Id), Player);
+
+			    NewZonePID = zonemaster:get_zone(Id),
+			    NewZonePID ! {enter, self(), Player#player.name, Direction},
+			    loop(Console, NewZonePID, Player);
 
 			{go, error, doesnt_exist} ->
-                            Console ! {message, "You cannot go that way"}
+                            Console ! {message, "You cannot go that way"},
+			    loop(Console, ZonePID, Player)
                     end;
                 logout ->
 		    ZonePID ! {logout, Player, Player#player.name},
