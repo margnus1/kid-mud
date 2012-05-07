@@ -58,6 +58,13 @@ loop(Console, ZonePID, Player) ->
 	    loop(Console, ZonePID, Player);
 
 	{player_enter, Name, Direction} ->
-	    Console ! {message, Name ++ " arrives from " ++ atom_to_list(Direction)},
+	    Message = case Direction of 
+			  north -> " arrives from south";
+			  east -> " arrives from west";
+			  south -> " arrives from north";
+			  west -> " arrives from east";
+			  login -> " logged in"
+		      end,
+	    Console ! {message, Name ++ Message},
 	    loop(Console, ZonePID, Player)
     end.

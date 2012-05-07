@@ -126,21 +126,15 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 -spec look(Players::[player()], Zone::zone()) -> string().
 
 look(Players, Zone) ->
-    lists:flatten(
-      io_lib:format(
-	"~s~n" ++
-	%% "~s~n" ++
-	"~s",
-	%% "~s",
-	[Zone#zone.desc,
-	 %% string:join(lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
-	 %% 		       Zone#zone.npc), "~n"),
-	 string:join(lists:map(fun({_, Name}) -> "Here stands " ++ Name end,
-			       Players), "~n")
-	 %% string:join(lists:map(fun({Amount, Item}) -> "Here lies " ++ 
-	 %% 						  format_item(Amount, Item) end,
-	 %% 		       Zone#zone.items), "~n")
-	])).
+    string:join(
+      [Zone#zone.desc] ++
+	 %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
+	 %% 		       Zone#zone.npc) ++
+	 lists:map(fun({_, Name}) -> "Here stands " ++ Name end,
+			       Players), %% ++
+	 %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
+	 %% 		format_item(Amount, Item) end, Zone#zone.items),
+      "\n").
 
 
 format_item(Amount, Item) ->
