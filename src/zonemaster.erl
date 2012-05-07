@@ -14,20 +14,19 @@ loop(ActiveZonesTree) ->
 	%% A get_zone command from a player
 	{get_zone, Player, Id} ->
 	    %% Checks if the zone is active
-	    ActiveZone =  gb_trees:lookup(Id,ActiveZonesTree),
-	    if ActiveZone =:= none ->
+	    case gb_trees:lookup(Id, ActiveZonesTree) of
+		none ->
 		    %% Spawn a new zone
 		    ZonePid = zone:start(Id),
-		    NewTree = gb_trees:insert(gb_trees:size(ActiveZonesTree),{Id,ZonePid},ActiveZonesTree),
+		    NewTree = gb_trees:insert(Id, ZonePid, ActiveZonesTree),
 
 		    %% Send the zone info to the player
-		    Player ! {zone,ZonePid},
+		    Player ! {zone, ZonePid},
 		    loop(NewTree);
 
-	       true ->
-		    {_,{_,Pid}} = ActiveZone,
+	       {value, Pid} ->
 		    %% Send the zone info to the player
-		    Player ! {zone,Pid},
+		    Player ! {zone, Pid},
 
 		    loop(ActiveZonesTree)
 
@@ -35,12 +34,12 @@ loop(ActiveZonesTree) ->
 
 	%% A zone_inactive message from a zone that is going inactive
 	{zone_inactive, Id} ->
-	    ActiveZone =  gb_trees:lookup(Id,ActiveZonesTree),
-	    if ActiveZone =:= none ->
+	    case gb_trees:lookup(Id,ActiveZonesTree) of
+		none ->
 		    erlang:error("Trying to inactivate a zone that's not active!");
-	       true ->
+		{value, _} ->
 		    NewTree = gb_trees:delete(Id,ActiveZonesTree),
-
+		    
 		    loop(NewTree)
 	    end
     end.

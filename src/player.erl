@@ -21,12 +21,11 @@ loop(Console, ZonePID, Player) ->
                     ZonePID ! {go, self(), Direction},
 		    receive 
 			{go, Id} ->
-			    Player = #player{location = Id},
 			    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
 
 			    NewZonePID = zonemaster:get_zone(Id),
 			    NewZonePID ! {enter, self(), Player#player.name, Direction},
-			    loop(Console, NewZonePID, Player);
+			    loop(Console, NewZonePID, Player#player{location=Id});
 
 			{go, error, doesnt_exist} ->
                             Console ! {message, "You cannot go that way"},

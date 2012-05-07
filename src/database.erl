@@ -65,7 +65,8 @@ setup() ->
     mnesia:create_schema([node()]),
     ok = mnesia:start(),
     create_tables([{disc_copies, [node()]}]),
-    write_zone(#zone{id=0, desc="You are in a dark room"}),
+    write_zone(#zone{id=0, desc="You are in a dark room",exits=[{north,1}]}),
+    write_zone(#zone{id=1, desc="You are in a even darker room",exits=[{south,0}]}),
     mnesia:stop(),
     ok.
 

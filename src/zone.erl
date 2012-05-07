@@ -35,19 +35,15 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	    E = [CurrentExits || CurrentExits = {Dir, _} <- Exits,
 				 Dir =:= Direction ],
 	    case E of
+		%% There is no exit in that location
 		[] ->
-
-		    %% There is no exit in that location
 		    Player ! {go, error, doesnt_exist},
 
 		    loop (Players, Data);
-
-		[DirectionID] -> 
-		    %% There is an exit in that location
-		    Player ! {go, DirectionID},
-
+		
+		%% There is an exit in that location
+		[{_, DirectionID}] -> 
 		    %% Remove the player from the player list,
-		    
 		    UpdatedPlayers = lists:keydelete(Player, 1, Players),
 
 		    %% Check if the zone is empty		    
@@ -55,11 +51,16 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 			    %% Store and close
 			    database:write_zone(Data),
 			    zonemaster ! {zone_inactive, Id},
+			    
+			    Player ! {go, DirectionID},
 			    ok;
 
 		       true ->
 			    %% Send a notification to the other players
 			    [Name] = [Name || {Player, Name} <- Players],
+
+			    Player ! {go, DirectionID},
+			    
 			    messagePlayers(UpdatedPlayers, Name, Direction, player_leave),
 
 			    loop(UpdatedPlayers, Data)

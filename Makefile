@@ -36,7 +36,7 @@ start_client: all
 	erl -sname kidclient -pa ebin
 
 start_server: all
-	erl -sname kidserver -noshell -pa ebin -mnesia dir database -s database -s zonemaster
+	erl -sname kidserver -pa ebin -mnesia dir database -s database -s zonemaster
 
 setup: all
 	mkdir database
