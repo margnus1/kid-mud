@@ -31,10 +31,19 @@ loop(Console, ZonePID, Player) ->
                             Console ! {message, "You cannot go that way"},
 			    loop(Console, ZonePID, Player)
                     end;
+
+		{say, Message} ->
+		    ZonePID ! {say, self(), Message},
+		    loop(Console, ZonePID, Player);
+
                 logout ->
 		    ZonePID ! {logout, self(), Player#player.name},
                     database:write_player(Player);
 
+                exits ->
+                    ZonePID ! {exits, self()},
+		    loop(Console, ZonePID, Player);
+		
                 look ->
                     ZonePID ! {look, self()},
 		    loop(Console, ZonePID, Player);
@@ -51,6 +60,10 @@ loop(Console, ZonePID, Player) ->
 
 	{look, Description} ->
 	    Console ! {message, Description},
+	    loop(Console, ZonePID, Player);
+
+	{say, Name, Message} ->
+	    Console ! {message, Name ++ " says: " ++ Message},
 	    loop(Console, ZonePID, Player);
 
 	{player_leave, Name, Direction} ->
