@@ -19,23 +19,19 @@ loop(Console, ZonePID, Player) ->
 		    receive 
 			{go, Id} ->
 			    Player = #player{location = Id},
-			    %% TODO: se till att man får veta vart man gick
 			    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
 			    loop(Console, zonemaster:get_zone(Id), Player);
 
-			{go, error, doesnotexist} ->
+			{go, error, doesnt_exist} ->
                             Console ! {message, "You cannot go that way"}
                     end;
                 logout ->
-		    ZonePID ! {logout, Player},
+		    ZonePID ! {logout, Player, Player#player.name},
                     database:write_player(Player),
 		    loop(Console, ZonePID, Player);
 
                 look ->
                     ZonePID ! {look, self()},
-                    receive {look, Description} ->
-                            Console ! {message, Description}
-		    end,
 		    loop(Console, ZonePID, Player);
 
 		parse_error ->
@@ -48,7 +44,15 @@ loop(Console, ZonePID, Player) ->
 	    Console ! {message, Name ++ " logged out"},
 	    loop(Console, ZonePID, Player);
 
+	{look, Description} ->
+	    Console ! {message, Description},
+	    loop(Console, ZonePID, Player);
+
+	{player_leave, Name, Direction} ->
+	    Console ! {message, Name ++ " went " ++ atom_to_list(Direction)},
+	    loop(Console, ZonePID, Player);
+
 	{player_enter, Name, Direction} ->
-	    Console ! {message, Name ++ " arrives from " ++ Direction},
+	    Console ! {message, Name ++ " arrives from " ++ atom_to_list(Direction)},
 	    loop(Console, ZonePID, Player)
     end.
