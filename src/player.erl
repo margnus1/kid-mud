@@ -13,7 +13,7 @@ login(Name, Console) ->
 loop(Console, ZonePID, Player) ->
     receive 
 	{command, Command} ->
-            case cmd = parser:parse(Command) of
+            case parser:parse(Command) of
                 {go, Direction} ->
                     ZonePID ! {go, self(), Direction},
 		    receive 
@@ -22,7 +22,7 @@ loop(Console, ZonePID, Player) ->
 			    %% TODO: se till att man får veta vart man gick
 			    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
 			    loop(Console, zonemaster:get_zone(Id), Player);
-			
+
 			{go, error, doesnotexist} ->
                             Console ! {message, "You cannot go that way"}
                     end;
@@ -30,24 +30,24 @@ loop(Console, ZonePID, Player) ->
 		    ZonePID ! {logout, Player},
                     database:write_player(Player),
 		    loop(Console, ZonePID, Player);
-		
+
                 look ->
                     ZonePID ! {look, self()},
                     receive {look, Description} ->
                             Console ! {message, Description}
 		    end,
 		    loop(Console, ZonePID, Player);
-		
+
 		parse_error ->
 		    Console ! {message, "Command not recognized"},
 		    loop(Console, ZonePID, Player)
-			
+
 	    end;
-	
+
 	{player_logout, Name} ->
 	    Console ! {message, Name ++ " logged out"},
 	    loop(Console, ZonePID, Player);
-	
+
 	{player_enter, Name, Direction} ->
 	    Console ! {message, Name ++ " arrives from " ++ Direction},
 	    loop(Console, ZonePID, Player)
