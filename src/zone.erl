@@ -147,3 +147,4 @@ format_item(Amount, Item) ->
 exits_message(Exits) ->
     "There are exits to " ++ 
 	string:join(lists:map(fun ({Dir, _}) -> atom_to_list(Dir) end, Exits), ", ").
+
