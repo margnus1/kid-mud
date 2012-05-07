@@ -10,11 +10,10 @@ start(Id) ->
     spawn(zone, loop, [Players, Data]).
 
 %% @doc Sends a message to all the players in the zone when a new player enters
-messagePlayers([{Player, _}|Rest], Playername, Direction, Notice) ->
-    Player ! {Notice, Playername, Direction}, 
-    messagePlayers(Rest, Playername, Direction, Notice);
+messagePlayers([{Player, _}|Rest], Playername, Message, Notice) ->
+    Player ! {Notice, Playername, Message}, 
+    messagePlayers(Rest, Playername, Message, Notice);
 messagePlayers([], _, _, _) -> ok.
-
 
 %% @doc Sends a message to all the players in the zone when a player logout
 messagePlayers(PlayerList, Playername, Notice) ->
@@ -40,7 +39,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		    Player ! {go, error, doesnt_exist},
 
 		    loop (Players, Data);
-		
+
 		%% There is an exit in that location
 		[{_, DirectionID}] -> 
 		    %% Remove the player from the player list,
@@ -51,17 +50,16 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 			    %% Store and close
 			    database:write_zone(Data),
 			    zonemaster ! {zone_inactive, Id},
-			    
+
 			    Player ! {go, DirectionID},
 			    ok;
 
 		       true ->
 			    %% Send a notification to the other players
-			    [Name] = [Name || {P, Name} <- Players,
-				              P =:= Player],
+			    {_, Name} = lists:keyfind(Player, 1, Players),
 
 			    Player ! {go, DirectionID},
-			    
+
 			    messagePlayers(UpdatedPlayers, Name, Direction, player_leave),
 
 			    loop(UpdatedPlayers, Data)
@@ -108,18 +106,22 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		    loop(UpdatedPlayers, Data)
 	    end;
 
-	    %% A 'exits' command from a player
+	%% A 'exits' command from a player
 	{exits, Player} -> 
 	    Player ! {look, exits_message(Exits)},
+	    loop(Players, Data);
+
+	%% A 'drop item' command from a player
+	%% A 'take item' command from a player
+	%% A 'con target' command from a player (consider)
+	%% A 'attack/kill target' command from a player
+	%% A 'look target' command from a player
+
+	%% A 'say line' command from a player
+	{say, Player, Message} -> 
+	    {_, Name} = lists:keyfind(Player, 1, Players),
+	    messagePlayers(lists:keydelete(Player, 1, Players), Name, Message, say),
 	    loop(Players, Data)
-
-	    %% A 'drop item' command from a player
-	    %% A 'take item' command from a player
-	    %% A 'con target' command from a player (consider)
-	    %% A 'attack/kill target' command from a player
-	    %% A 'look target' command from a player
-	    %% A 'say line' command from a player
-
     end.
 
 %% @doc Constructs a "look" message

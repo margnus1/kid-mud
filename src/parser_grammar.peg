@@ -1,10 +1,17 @@
-command <- logout_command / move_command / look_command;
+command <- logout_command / exits_command / say_command / look_command / move_command ;
+
+say_command <- "say " .* `
+[_, Letters] = Node,
+{say, lists:flatten(lists:map (fun erlang:binary_to_list/1, Letters))}
+`;
+
+exits_command <- "exits" `exits`;
 
 look_command <- "look" / "l" `look`;
 
 logout_command <- "logout" `logout`;
 
-move_command <- move direction;
+move_command <- move direction `list_to_tuple(Node)`;
 move <- "go " / "move " / "" `go`;
 direction <- north / east / west / south;
 north <- "north" / "n" `north`;

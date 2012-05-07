@@ -9,10 +9,9 @@
 %%       Direction = north | east | south | west
 parse(String) ->
     case parser_grammar:parse(String) of
-        List when is_list(List) ->
-            list_to_tuple(List);
-        Atom when is_atom(Atom) -> Atom;
-        _ErrorMessage -> parse_error
+	{_, _, {{line, _}, {column,_}}} -> parse_error;
+	{fail, _} -> parse_error;
+	Result -> Result
     end.
 
 
@@ -26,4 +25,6 @@ parse_test_() ->
      ?_assertEqual({go, east} , parse("move e")),
      ?_assertEqual({go, west} , parse("west")),
      ?_assertEqual({go, south}, parse("s")),
+     ?_assertEqual(exits      , parse("exits")),
+     ?_assertEqual({say, "tt"}, parse("say tt")),
      ?_assertEqual(parse_error, parse("go southish"))].
