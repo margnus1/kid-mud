@@ -26,9 +26,9 @@ remote(Caller, Name, Writer) ->
 
 loop(Server, Writer) ->
     case io:get_line("?> ") of 
-        eof -> 
+        "logout\n" -> 
             Writer ! plz_die,
-            Server ! user_disconnect,
+            Server ! {command, "logout"},
             ok;
         Line ->
             Server ! {command, droplast(Line)},
