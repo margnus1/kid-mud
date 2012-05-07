@@ -17,10 +17,10 @@ insert_zones([{Id, Desc, Exits}|Rest]) ->
     
 
 prepare_exits(Rooms, [{Id, {X, Y}, Desc}|Rest], Acc) ->
-    prepare_exits(Rooms, Rest, [{Id, Desc, gen_exit(Rooms, {X-1,Y}, east) ++
-				     gen_exit(Rooms, {X-1,Y}, east) ++
-				     gen_exit(Rooms, {X-1,Y}, east) ++
-				     gen_exit(Rooms, {X-1,Y}, east)} | Acc]);
+    prepare_exits(Rooms, Rest, [{Id, Desc, gen_exit(Rooms, {X+1,Y}, east) ++
+				     gen_exit(Rooms, {X-1,Y}, west) ++
+				     gen_exit(Rooms, {X,Y+1}, north) ++
+				     gen_exit(Rooms, {X,Y-1}, south)} | Acc]);
 prepare_exits(_, [], Acc) ->
     Acc.
 
@@ -42,7 +42,7 @@ loop(Device, Id, Acc) ->
 	Data -> 
 	    Line = droplast(Data),
 	    [Coords, Description] = string:tokens(Line, "\t"),
-	    [Xstr, Ystr] = string:tokens(Coords),
+	    [Xstr, Ystr] = string:tokens(Coords, ","),
 	    {X, Y} = {list_to_integer(Xstr), list_to_integer(Ystr)},
 	    loop(Device, Id+1, [{Id, {X, Y}, Description}|Acc])
     end.
