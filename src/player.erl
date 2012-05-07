@@ -32,9 +32,8 @@ loop(Console, ZonePID, Player) ->
 			    loop(Console, ZonePID, Player)
                     end;
                 logout ->
-		    ZonePID ! {logout, Player, Player#player.name},
-                    database:write_player(Player),
-		    loop(Console, ZonePID, Player);
+		    ZonePID ! {logout, self(), Player#player.name},
+                    database:write_player(Player);
 
                 look ->
                     ZonePID ! {look, self()},

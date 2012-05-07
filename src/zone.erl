@@ -57,7 +57,8 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 		       true ->
 			    %% Send a notification to the other players
-			    [Name] = [Name || {Player, Name} <- Players],
+			    [Name] = [Name || {P, Name} <- Players,
+				              P =:= Player],
 
 			    Player ! {go, DirectionID},
 			    
