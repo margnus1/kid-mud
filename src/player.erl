@@ -20,7 +20,7 @@ loop(Console, ZonePID, Player) ->
 			{go, Id} ->
 			    Player = #player{location = Id},
 			    %% TODO: se till att man får veta vart man gick
-			    Console ! {message, "You successfully moved"},
+			    Console ! {message, "You successfully moved " ++ atom_to_list(Directory)},
 			    loop(Console, zonemaster:get_zone(Id), Player);
 			
 			{go, error, doesnotexist} ->
@@ -28,23 +28,26 @@ loop(Console, ZonePID, Player) ->
                     end;
                 logout ->
 		    ZonePID ! {logout, Player},
-                    database:write_player(Player);
-
+                    database:write_player(Player),
+		    loop(Console, ZonePID, Player);
+		
                 look ->
                     ZonePID ! {look, self()},
                     receive {look, Description} ->
                             Console ! {message, Description}
-		    end;
+		    end,
+		    loop(Console, ZonePID, Player);
 		
 		parse_error ->
-		    Console ! {message, "Command not recognized"}
-	    end,
-	    loop(Console, ZonePID, Player);
+		    Console ! {message, "Command not recognized"},
+		    loop(Console, ZonePID, Player)
+			
+	    end;
 	
 	{player_logout, Name} ->
 	    Console ! {message, Name ++ " logged out"},
 	    loop(Console, ZonePID, Player);
-
+	
 	{player_enter, Name, Direction} ->
 	    Console ! {message, Name ++ " arrives from " ++ Direction},
 	    loop(Console, ZonePID, Player)
