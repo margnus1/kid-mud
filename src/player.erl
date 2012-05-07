@@ -20,7 +20,7 @@ loop(Console, ZonePID, Player) ->
 			{go, Id} ->
 			    Player = #player{location = Id},
 			    %% TODO: se till att man får veta vart man gick
-			    Console ! {message, "You successfully moved " ++ atom_to_list(Directory)},
+			    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
 			    loop(Console, zonemaster:get_zone(Id), Player);
 			
 			{go, error, doesnotexist} ->

@@ -6,7 +6,7 @@
 %% @doc Starts the zone
 start(Id) ->
     Data = database:read_zone(Id),
-    Players = [{1,2},{3,4}], %% Should be empty here!!!
+    Players = [{1,2},{3,4}], %% Should be empty!
     spawn(zone, loop, [Players, Data]).
 
 %% @doc Sends a message to all the players in the zone when a new player enters
@@ -17,21 +17,24 @@ messagePlayers(PlayerList, Playername, Direction, Notice) ->
 messagePlayers(PlayerList, Playername, Notice) ->
     lists:foldl(fun ({Player, _}, _) -> Player ! {Notice, Playername}, ok end, ok, PlayerList).
 
-%% @doc Sends a list of the names in that list if its not empty.
+%% @doc Sends Notice and a list to the Player of all the names in List if its not empty.
 messagePlayer([], _, _) ->
     ok;
-messagePlayer(PlayerList, Player, Notice) ->
-    PlayerNames = [ Name || {_, Name} <- PlayerList ],
-    Player ! {Notice, PlayerNames}.
+messagePlayer(List, Player, Notice) ->
+    Names = [ Name || {_, Name} <- List ],
+    Player ! {Notice, Names}.
 
 %% @doc The main loop of the zone
 loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
     receive 
-	%% A go command from a player
+	%% A 'go' command from a player
 	{go, Player, Name, Direction} ->
 	    E = [CurrentExits || CurrentExits = {Dir, _} <- Exits,
 				 Dir =:= Direction ],
 	    {_,DirectionID} = hd(E),
+
+	%%Göra om så att den bara har exits som finns?, annars tomma listan?
+	%%I databasen dvs.
 
 	    %% Checks if the exit is valid
 	    if DirectionID =:= none ->
@@ -62,7 +65,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		    end
 	    end;
 
-	%% Look command from a player
+	%% A 'look' command from a player
 	{look, Player} -> 
 	    %% Sends the description to the player
 	    Player ! {look, Desc},
@@ -75,6 +78,9 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 	    %% Sends the player the Item's as a list of names
 	    %%messagePlayer(Items, Player, items_in_zone),
+
+	    %% Sends the player the Exits's as a list of names
+	    %%Player ! {exits, exits_in_zone},
 
 	    loop(Players, Data);
 
@@ -92,6 +98,9 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	    %% Sends the player the Items as a list of names
 	    %%messagePlayer(Items, Player, items_in_zone),
 
+	    %% Sends the player the Exits's as a list of names
+	    %%Player ! {exits, exits_in_zone},
+
 	    %% Sends a notification to the other players
 	    messagePlayers(Players, Name, Direction, enter_notification),
 
@@ -100,7 +109,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 	    loop(UpdatedPlayers, Data);
 
-	%% A logout command from a player
+	%% A 'logout' command from a player
 	{logout, Player, Name} ->
 	    %% Remove the player from the player list,
 	    UpdatedPlayers = lists:delete({Player,Name}, Players), 
@@ -118,4 +127,16 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 		    loop(UpdatedPlayers, Data)
 	    end
+
+	%% A 'exits' command from a player
+	%% {exits, Player} -> 
+	%%Player ! {exits, exits_in_zone};
+
+	%% A 'drop item' command from a player
+	%% A 'take item' command from a player
+	%% A 'con target' command from a player (consider)
+	%% A 'attack/kill target' command from a player
+	%% A 'look target' command from a player
+	%% A 'say line' command from a player
+
     end.
