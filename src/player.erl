@@ -36,8 +36,12 @@ start_link(Name, Console) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% 
-%% @spec command(Player, Command) -> {noreply, Console, Zone, PlayerRecord}
+%% Executes the given command if its a legal command by messaging
+%% the concerned modules
+%%
+%% @spec command(Player, Command) -> {noreply, Console, Zone, PlayerRecord} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, logout, State}
 %% @end
 %%--------------------------------------------------------------------
 command(Player, Command) ->
@@ -45,6 +49,7 @@ command(Player, Command) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Writes a message to the player
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -53,6 +58,7 @@ message(Player, Message) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Kick the player
 %%
 %% @end
 %%--------------------------------------------------------------------
