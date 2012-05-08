@@ -54,6 +54,11 @@ get_zone(Id) ->
 	    Zone
     end.
 
+%% @doc Message that a zone is going inactive
+zone_inactive(Id) ->
+    zonemaster ! {zone_inactive, Id},
+    ok.
+
 test_setup() ->
     mnesia:start(),
     database:create_tables([]),

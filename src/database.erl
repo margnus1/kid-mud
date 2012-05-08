@@ -82,8 +82,8 @@ create_tables(Options) ->
 
 %% @hidden
 test_setup() ->
-    mnesia:start(),
-    create_tables([]).
+    mnesia:start().
+    %%create_tables([]).
 
 %% @hidden
 database_test_() ->

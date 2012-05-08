@@ -6,7 +6,7 @@
 connect() ->
     Name = droplast(io:get_line("Name?> ")),
     Writer = spawn(fun writer/0),
-    Server = player:login(Name, Writer),
+    {ok, Server} = player:start_link(Name, Writer),
     loop(Server, Writer).
 
 %% @doc Starts a console session to the mud on the node Node
@@ -15,23 +15,23 @@ connect(Node) ->
     Name = droplast(io:get_line("Name?> ")),
     Writer = spawn(fun writer/0),
     spawn(Node, client, remote, [self(), Name, Writer]),
-    Server = receive {server, Server} -> Server end,
+    Server = receive {server, {ok, Server}} -> Server end,
     loop(Server, Writer).
 
 %% @doc Performs connection at remote node
 %% @spec remote(Caller::pid(), Name::string(), Writer::pid()) -> ok
 remote(Caller, Name, Writer) ->
-    Caller ! {server, player:login(Name, Writer)},
+    Caller ! {server, player:start_link(Name, Writer)},
     ok.
 
 loop(Server, Writer) ->
     case io:get_line("?> ") of 
         "logout\n" -> 
             Writer ! plz_die,
-            Server ! {command, "logout"},
+            player:command(Server, "logout"),
             ok;
         Line ->
-            Server ! {command, droplast(Line)},
+            player:command(Server, droplast(Line)),
             loop(Server, Writer)
     end.
 

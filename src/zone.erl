@@ -6,31 +6,30 @@
 %% @doc Starts the zone
 start(Id) ->
     Data = database:read_zone(Id),
-    Players = [], %% Should be empty!
+    Players = [],
     spawn(zone, loop, [Players, Data]).
 
 %% @doc Sends a message to all the players in the zone
-messagePlayers([{Player, _}|Rest], Playername, Message, Integer, Notice) ->
-    Player ! {Notice, Playername, Message, Integer}, 
-    messagePlayers(Rest, Playername, Message, Integer, Notice);
+messagePlayers([{Player, _}|Rest], Arg1, Arg2, Arg3, Notice) ->
+    player:Notice(Player, Arg1, Arg2, Arg3), 
+    messagePlayers(Rest, Arg1, Arg2, Arg3, Notice);
+
 messagePlayers([], _, _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
-messagePlayers([{Player, _}|Rest], Playername, Message, Notice) ->
-    Player ! {Notice, Playername, Message}, 
-    messagePlayers(Rest, Playername, Message, Notice);
+messagePlayers([{Player, _}|Rest], Arg1, Arg2, Notice) ->
+    player:Notice(Player, Arg1, Arg2),
+    messagePlayers(Rest, Arg1, Arg2, Notice);
+
 messagePlayers([], _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone when a player logout
-messagePlayers(PlayerList, Playername, Notice) ->
-    lists:foldl(fun ({Player, _}, _) -> Player ! {Notice, Playername}, ok end, ok, PlayerList).
+messagePlayers([{Player, _}|Rest], Arg1, Notice) ->
+    player:Notice(Player, Arg1), 
+    messagePlayers(Rest, Arg1, Notice);
 
-%% @doc Sends Notice and a list to the Player of all the names in List if its not empty.
-messagePlayer([], _, _) ->
-    ok;
-messagePlayer(List, Player, Notice) ->
-    Names = [ Name || {_, Name} <- List ],
-    Player ! {Notice, Names}.
+messagePlayers([], _, _) -> ok.
+
 
 %% @doc The main loop of the zone
 loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
@@ -40,34 +39,29 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	    E = [CurrentExits || CurrentExits = {Dir, _} <- Exits,
 				 Dir =:= Direction ],
 	    case E of
-		%% There is no exit in that location
 		[] ->
-		    Player ! {go, error, doesnt_exist},
+		    %% @todo MUST GO AWAY
+		    Player ! {go, error, doesnt_exist}, 
 
 		    loop (Players, Data);
 
-		%% There is an exit in that location
 		[{_, DirectionID}] -> 
-		    %% Remove the player from the player list,
 		    UpdatedPlayers = lists:keydelete(Player, 1, Players), 
-
-		    %% Check if the zone is empty		    
+		    
 		    if UpdatedPlayers =:= [] ->
-			    %% Store and close
 			    database:write_zone(Data),
 			    zonemaster ! {zone_inactive, Id},
 
+			    %% @todo MUST GO AWAY
 			    Player ! {go, DirectionID},
 			    ok;
 
 		       true ->
-			    %% Send a notification to the other players
 			    {_, Name} = lists:keyfind(Player, 1, Players), 
 
+			    %% @todo MUST GO AWAY
 			    Player ! {go, DirectionID},
-
 			    messagePlayers(UpdatedPlayers, Name, Direction, player_leave),
-
 			    loop(UpdatedPlayers, Data)
 		    end
 	    end;
@@ -75,15 +69,15 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	%% A 'look' command from a player
 	{look, Player} -> 
 	    %% Sends the description to the player
-	    Player ! {look, look(lists:keydelete(Player, 1, Players), Data)},
-	    Player ! {look, exits_message(Exits)},
+	    player:message(Player, look(lists:keydelete(Player, 1, Players), Data)),
+	    player:message(Player, exits_message(Exits)),
 	    loop(Players, Data);
 
 	%% A new player enters the zone
 	{enter, Player, Name, Direction} ->
 	    %% Sends the description to the player
-	    Player ! {look, look(Players, Data)},
-	    Player ! {look, exits_message(Exits)},
+	    player:message(Player, look(Players, Data)),
+	    player:message(Player, exits_message(Exits)),
 
 	    %% Sends a notification to the other players
 	    messagePlayers(Players, Name, Direction, player_enter),
@@ -102,7 +96,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	    if UpdatedPlayers =:= [] ->
 		    %% Store and close
 		    database:write_zone(Data),
-		    zonemaster ! {zone_inactive, Id},
+		    zonemaster:zone_inactive(Id),
 		    ok;
 
 	       true ->
@@ -114,7 +108,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 	%% A 'exits' command from a player
 	{exits, Player} -> 
-	    Player ! {look, exits_message(Exits)},
+	    player:message(Player, exits_message(Exits)),
 	    loop(Players, Data);
 
 	%% A 'kick' command from somewhere
@@ -131,7 +125,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		    if UpdatedPlayers =:= [] ->
 			    %% Store and close
 			    database:write_zone(Data),
-			    zonemaster ! {zone_inactive, Id},
+			    zonemaster:zone_inactive(Id),
 			    ok;
 
 		       true ->
@@ -158,7 +152,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	    if UpdatedPlayers =:= [] ->
 		    %% Store and close
 		    database:write_zone(Data),
-		    zonemaster ! {zone_inactive, Id},
+		    zonemaster:zone_inactive(Id),
 
 		    ok;
 	       true ->
@@ -213,7 +207,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	%% A 'say line' command from a player
 	{say, Player, Message} -> 
 	    {_, Name} = lists:keyfind(Player, 1, Players),
-	    messagePlayers(lists:keydelete(Player, 1, Players), Name, Message, say),
+	    messagePlayers(Players, Name, Message, say),
 	    loop(Players, Data)
     end.
 
