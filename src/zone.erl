@@ -13,7 +13,7 @@ start(Id) ->
 messagePlayers([{Player, _}|Rest], Playername, Message, Integer, Notice) ->
     Player ! {Notice, Playername, Message, Integer}, 
     messagePlayers(Rest, Playername, Message, Integer, Notice);
-messagePlayers([], _, _, _) -> ok.
+messagePlayers([], _, _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
 messagePlayers([{Player, _}|Rest], Playername, Message, Notice) ->
@@ -49,7 +49,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		%% There is an exit in that location
 		[{_, DirectionID}] -> 
 		    %% Remove the player from the player list,
-		    UpdatedPlayers = lists:keydelete(Player, 1, Players), %% 1
+		    UpdatedPlayers = lists:keydelete(Player, 1, Players), 
 
 		    %% Check if the zone is empty		    
 		    if UpdatedPlayers =:= [] ->
@@ -62,7 +62,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 		       true ->
 			    %% Send a notification to the other players
-			    {_, Name} = lists:keyfind(Player, 1, Players),  %% den hämtar det som deletades i 1 ???
+			    {_, Name} = lists:keyfind(Player, 1, Players), 
 
 			    Player ! {go, DirectionID},
 
