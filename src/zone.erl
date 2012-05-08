@@ -158,9 +158,9 @@ handle_call({go, Player, Direction}, _From, {Players, Data = #zone{exits=Exits}}
 
 	       UpdatedPlayers ->
 		    Name = get_name(Player, Players),
-		    messagePlayers(UpdatedPlayers, message, 
-				   Name ++ " has left to the " ++ 
-				       atom_to_list(Direction)),
+		    message_players(UpdatedPlayers, message, 
+				   [Name, " has left to the ", 
+				       atom_to_list(Direction)]),
 
 		    {reply, {ok, DirectionID}, {UpdatedPlayers, Data}}
 	    end
@@ -192,7 +192,7 @@ handle_cast({enter, Player, Name, Direction}, {Players, Data = #zone{exits=Exits
     player:message(Player, look_message(Players, Data)),
     player:message(Player, exits_message(Exits)),
 
-    messagePlayers(Players, message, [Name, format_arrival(Direction)]),
+    message_players(Players, message, [Name, format_arrival(Direction)]),
 
     UpdatedPlayers = [{Player, Name} | Players],
 
@@ -206,8 +206,8 @@ handle_cast({logout, Player}, {Players, Data}) ->
 	    {stop, normal, {[], Data}};
 
 	UpdatedPlayers ->
-	    messagePlayers(UpdatedPlayers, message, 
-			   get_name(Player, Players) ++ " has logged out"),
+	    message_players(UpdatedPlayers, message, 
+			   [get_name(Player, Players), " has logged out"]),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
@@ -227,7 +227,7 @@ handle_cast({kick, Name}, {Players, Data}) ->
 		    {stop, normal, {[], Data}};
 
 		UpdatedPlayers ->
-		    messagePlayers(UpdatedPlayers, message, Name ++ " has logged out"),
+		    message_players(UpdatedPlayers, message, [Name, " has logged out"]),
 		    {noreply, {UpdatedPlayers, Data}}
 	    end;
 
@@ -239,22 +239,20 @@ handle_cast({kick, Name}, {Players, Data}) ->
 handle_cast({death, Player}, {Players, Data}) ->
     Name = get_name(Player, Players),
 
-    %% @todo Stop any attacking mobs
-
     case lists:keydelete(Player, 1, Players) of
 	[] ->
 	    {stop, normal, {[], Data}};
 
 	UpdatedPlayers ->
-	    messagePlayers(UpdatedPlayers, message, 
-			   Name ++ " has been slain!"),
+	    message_players(UpdatedPlayers, message, 
+			   [Name, " has been slain!"]),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
 
 handle_cast({say, Player, Message}, State={Players,_}) ->
     Name = get_name(Player, Players),
-    messagePlayers(Players, message, [Name, " says \"", Message, "\""]),
+    message_players(Players, message, [Name, " says \"", Message, "\""]),
     {noreply, State};
 
 
@@ -310,28 +308,26 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-%% @todo fix names format: xx_xxx
-
 %% @doc Sends a message to all the players in the zone
-messagePlayers([{Player, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
+message_players([{Player, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
     player:Notice(Player, Arg1, Arg2, Arg3), 
-    messagePlayers(Rest, Notice, Arg1, Arg2, Arg3);
+    message_players(Rest, Notice, Arg1, Arg2, Arg3);
 
-messagePlayers([], _, _, _, _) -> ok.
+message_players([], _, _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
-messagePlayers([{Player, _}|Rest], Notice, Arg1, Arg2) ->
+message_players([{Player, _}|Rest], Notice, Arg1, Arg2) ->
     player:Notice(Player, Arg1, Arg2),
-    messagePlayers(Rest, Notice, Arg1, Arg2);
+    message_players(Rest, Notice, Arg1, Arg2);
 
-messagePlayers([], _, _, _) -> ok.
+message_players([], _, _, _) -> ok.
 
-%% @doc Sends a message to all the players in the zone when a player logout
-messagePlayers([{Player, _}|Rest], Notice, Arg1) ->
+%% @doc Sends a message to all the players in the zone
+message_players([{Player, _}|Rest], Notice, Arg1) ->
     player:Notice(Player, Arg1), 
-    messagePlayers(Rest, Notice, Arg1);
+    message_players(Rest, Notice, Arg1);
 
-messagePlayers([], _, _) -> ok.
+message_players([], _, _) -> ok.
 
 %% @doc Constructs a "look" message
 -spec look_message(Players::[player()], Zone::zone()) -> string().
@@ -379,11 +375,20 @@ zone_test_() ->
      [?_assertEqual(format_arrival(north), " arrives from south"),
 
       fun () ->
-	      handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
-	      receive
-		  {_, {message, Message}} ->
-		      ?_assertEqual(Message, "Arne says \"Message\"")
-	      end
+	handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
+	receive
+		{_, {message, Message}} ->
+			?_assertEqual(Message, "Arne says \"Message\"")
+		end
+
+	%% handle_cast({exits, self()}, {[{self(),"Arne"}],[{north,1}]}),
+	%% receive
+	%%	{_, {message, Message}} ->
+	%%	        ?_assertEqual(Message, "There is an exit to the north")
+	%%    	end
+
+
+
 
       end
 
