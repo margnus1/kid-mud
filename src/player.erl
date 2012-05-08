@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(player).
 -include("player.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
 %% API
@@ -27,7 +28,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @spec start_link(Name, Console) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(Name, Console) ->
@@ -35,7 +36,8 @@ start_link(Name, Console) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% 
+%% @spec command(Player, Command) -> {noreply, Console, Zone, PlayerRecord}
 %% @end
 %%--------------------------------------------------------------------
 command(Player, Command) ->
@@ -110,7 +112,6 @@ handle_call(Request, _From, State) ->
 %%--------------------------------------------------------------------
 handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
     case parser:parse(Command) of
-
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
 		{ok, Id} ->
@@ -147,9 +148,9 @@ handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
 
     end;
 
-handle_cast({message, Description}, OldState={Console,_,_}) ->
+handle_cast({message, Description}, State={Console,_,_}) ->
     Console ! {message, Description},
-    {noreply, OldState};
+    {noreply, State};
 
 
 handle_cast(kick, State={Console,_,_}) ->
@@ -206,3 +207,34 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%%%===================================================================
+%%% EUnit Tests
+%%%===================================================================
+
+
+%%test_setup() ->
+%%    mnesia:start(),
+%%    database:create_tables([]),
+%%    ok.
+
+%% @hidden
+fetch() ->
+    receive
+        Anything ->
+            Anything
+    end.
+
+player_test_() ->
+    [
+     fun () ->		  
+	     ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever}),
+			  {noreply, {self(),what,ever}}),
+	     ?assertEqual(fetch(), {message, "foo"})
+     end,
+     fun () ->		  
+	     ?assertEqual(handle_cast(kick, {self(),what,ever}),
+			  {stop, kick, {self(),what,ever}}),
+	     ?assertEqual(fetch(), {message, "You have been kicked!"})
+     end, 
+     ?_assertEqual(handle_cast("test", state), {noreply, state})
+    ].
