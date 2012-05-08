@@ -1,5 +1,7 @@
 -module(zonemaster).
 -export([start/0, loop/1, get_zone/1]).
+-include_lib("eunit/include/eunit.hrl").
+-include("zone.hrl").
 
 %% @doc Starts the zonemaster
 start() ->
@@ -51,4 +53,16 @@ get_zone(Id) ->
 	{zone, Zone} ->
 	    Zone
     end.
+
+test_setup() ->
+    mnesia:start(),
+    database:create_tables([]),
+    database:write_zone(#zone{id=1234}).
+
+zonemaster_test_() ->
+    {setup, fun test_setup/0, 
+     [fun () ->
+	      Id = start(),
+	      ?assertEqual(get_zone(1234), get_zone(1234)) end
+     ]}.
 

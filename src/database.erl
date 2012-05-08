@@ -1,5 +1,5 @@
 -module(database).
--export([read_player/1, write_player/1, read_zone/1, write_zone/1, start/0, stop/0, setup/0]).
+-export([read_player/1, write_player/1, read_zone/1, write_zone/1, start/0, stop/0, setup/0, create_tables/1]).
 -include("zone.hrl").
 -include("player.hrl").
 
