@@ -145,68 +145,58 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		    loop(Players, Data)
 	    end;
 
-	%% A 'drop item' command from a player
-	%% A 'take item' command from a player
-	%% A 'con target' command from a player (consider)
-	%% A 'look at target' command from a player
-
-	%% A 'attack/kill target' command from a player
-
 	%% A 'death' message from a player
-	%%{death, Player, Killer} ->
-	%%{_, Name} = lists:keyfind(Player, 1, Players),
+	{death, Player, Killer} ->
+	    {_, Name} = lists:keyfind(Player, 1, Players),
 
-	%%Stop any attacking mobs
+	    %%Stop any attacking mobs
 
-	%% Remove the player from the player list,
-	%%UpdatedPlayers = lists:keydelete(Player, 1, Players),
-	
-	%% Check if the zone is empty		    
-	%%if UpdatedPlayers =:= [] ->
-		%% Store and close
-	%%	database:write_zone(Data),
-	%%	zonemaster ! {zone_inactive, Id},
+	    %% Remove the player from the player list,
+	    UpdatedPlayers = lists:keydelete(Player, 1, Players),
 
-	%%	ok;
-	%%true ->
-	%%	messagePlayers(UpdatedPlayers, Name, Killer, player_died),  %% new message!
+	    %% Check if the zone is empty		    
+	    if UpdatedPlayers =:= [] ->
+		    %% Store and close
+		    database:write_zone(Data),
+		    zonemaster ! {zone_inactive, Id},
 
-	%%	loop(UpdatedPlayers, Data)
-	%%end;
+		    ok;
+	       true ->
+		    messagePlayers(UpdatedPlayers, Name, Killer, player_died),  %% new message!
+		    loop(UpdatedPlayers, Data)
+	    end;
 
-	%% Player ! {receive_exp, Amount}
-
-	%% messagePlayers(Players, Name, Mob, Amount, player_damage), %% Mob hits Name for Amount damage.
+	%%messagePlayers(Players, Name, Mob, Amount, player_damage), %% Mob hits Name for Amount damage.
 	%% Player ! {take_damage, Amount}
 	%% Player ! {skill, Player, Skill, Target}
 
 
 
-%% Player {PID, NAME, STATUS, AS, TOHIT, DAMAGE, DV(defensive value), PV(protection value)}
+	%% Player {PID, NAME, STATUS, AS, TOHIT, DAMAGE, DV(defensive value), PV(protection value)}
 
-%% Eller vi bör hämta detta ur databasen.
+	%% Eller vi bör hämta detta ur databasen.
 
-%%kill message (attack, Attacker, Target, AS, ToHit, Damage, Type),
+	%%kill message (attack, Attacker, Target, AS, ToHit, Damage, Type),
 
-%%case Status of 
-%%	combat -> Player ! already_in_combat
-%%		  loop
+	%%case Status of 
+	%%	combat -> Player ! already_in_combat
+	%%		  loop
 
-%%	normal -> 
-%%		calculate if hit.
-%%		send message to everyone of the outcome
-%%		if NPC make him aggro Player and set timer for new attack
-%%		if AnotherPlayer send him damage report if any.
-%%		set timer for new attack depending on AS
-%%		loop
+	%%	normal -> 
+	%%		calculate if hit.
+	%%		send message to everyone of the outcome
+	%%		if NPC make him aggro Player and set timer for new attack
+	%%		if AnotherPlayer send him damage report if any.
+	%%		set timer for new attack depending on AS
+	%%		loop
 
-%%	fleeing -> loop
-%%	dead -> loop
+	%%	fleeing -> loop
+	%%	dead -> loop
 
-%%{flee, Player} -> set Player status = fleeing
-%%		  message other Players that Player is trying to flee
-%%		  set timer for flee attempt
-%%		  loop
+	%%{flee, Player} -> set Player status = fleeing
+	%%		  message other Players that Player is trying to flee
+	%%		  set timer for flee attempt
+	%%		  loop
 
 	%% A 'attack/kill target' command from a player
 	%%{attack, Player, Target, Damage, Hit} ->
