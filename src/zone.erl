@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(zone).
 -include("zone.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
 %% API
@@ -50,7 +51,7 @@ go(Zone, Player, Direction) ->
 %% @end
 %%--------------------------------------------------------------------
 look(Zone, Player) ->
-    gen_server:cast(Zone, {go, Player}).
+    gen_server:cast(Zone, {look, Player}).
 
 
 %%--------------------------------------------------------------------
@@ -182,7 +183,6 @@ handle_call(Request, _From, State) ->
 %%--------------------------------------------------------------------
 
 handle_cast({look, Player}, State={Players, Data = #zone{exits=Exits}}) ->
-    %% Sends the description to the player
     player:message(Player, look_message(lists:keydelete(Player, 1, Players), Data)),
     player:message(Player, exits_message(Exits)),
     {noreply, State};
@@ -192,7 +192,7 @@ handle_cast({enter, Player, Name, Direction}, {Players, Data = #zone{exits=Exits
     player:message(Player, look_message(Players, Data)),
     player:message(Player, exits_message(Exits)),
 
-    messagePlayers(Players, player_enter, Name, Direction),
+    messagePlayers(Players, message, [Name, format_arrival(Direction)]),
 
     UpdatedPlayers = [{Player, Name} | Players],
 
@@ -310,6 +310,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% @todo fix names format: xx_xxx
+
 %% @doc Sends a message to all the players in the zone
 messagePlayers([{Player, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
     player:Notice(Player, Arg1, Arg2, Arg3), 
@@ -367,3 +369,22 @@ format_arrival(south) -> " arrives from north";
 format_arrival(west) -> " arrives from east";
 format_arrival(login) -> " logged in".
     
+test_setup() ->
+    {ok, Testzone1} = start_link(1234),
+    {ok, Testzone2} = start_link(1235),
+    ok.
+
+zone_test_() ->
+    {setup, fun test_setup/0, 
+     [?_assertEqual(format_arrival(north), " arrives from south"),
+
+      fun () ->
+	      handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
+	      receive
+		  {_, {message, Message}} ->
+		      ?_assertEqual(Message, "Arne says \"Message\"")
+	      end
+
+      end
+
+     ]}.
