@@ -2,7 +2,7 @@ command <- logout_command / exits_command / say_command / look_command / move_co
 
 say_command <- "say " .* `
 [_, Letters] = Node,
-{say, lists:flatten(lists:map (fun erlang:binary_to_list/1, Letters))}
+{say, unicode:characters_to_list(Letters)}
 `;
 
 exits_command <- "exits" `exits`;

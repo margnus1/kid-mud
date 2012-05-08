@@ -9,7 +9,13 @@ start(Id) ->
     Players = [], %% Should be empty!
     spawn(zone, loop, [Players, Data]).
 
-%% @doc Sends a message to all the players in the zone when a new player enters
+%% @doc Sends a message to all the players in the zone
+messagePlayers([{Player, _}|Rest], Playername, Message, Integer, Notice) ->
+    Player ! {Notice, Playername, Message, Integer}, 
+    messagePlayers(Rest, Playername, Message, Integer, Notice);
+messagePlayers([], _, _, _, _) -> ok.
+
+%% @doc Sends a message to all the players in the zone
 messagePlayers([{Player, _}|Rest], Playername, Message, Notice) ->
     Player ! {Notice, Playername, Message}, 
     messagePlayers(Rest, Playername, Message, Notice);
@@ -43,7 +49,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 		%% There is an exit in that location
 		[{_, DirectionID}] -> 
 		    %% Remove the player from the player list,
-		    UpdatedPlayers = lists:keydelete(Player, 1, Players),
+		    UpdatedPlayers = lists:keydelete(Player, 1, Players), 
 
 		    %% Check if the zone is empty		    
 		    if UpdatedPlayers =:= [] ->
@@ -56,7 +62,7 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 
 		       true ->
 			    %% Send a notification to the other players
-			    {_, Name} = lists:keyfind(Player, 1, Players),
+			    {_, Name} = lists:keyfind(Player, 1, Players), 
 
 			    Player ! {go, DirectionID},
 
@@ -142,8 +148,65 @@ loop(Players, Data = #zone{id=Id, exits=Exits, npc=NPCs, desc=Desc}) ->
 	%% A 'drop item' command from a player
 	%% A 'take item' command from a player
 	%% A 'con target' command from a player (consider)
-	%% A 'inspect target' command from a player
-	%% A 'look target' command from a player
+	%% A 'look at target' command from a player
+
+	%% A 'attack/kill target' command from a player
+
+	%% A 'death' message from a player
+	%%{death, Player, Killer} ->
+	%%{_, Name} = lists:keyfind(Player, 1, Players),
+
+	%%Stop any attacking mobs
+
+	%% Remove the player from the player list,
+	%%UpdatedPlayers = lists:keydelete(Player, 1, Players),
+	
+	%% Check if the zone is empty		    
+	%%if UpdatedPlayers =:= [] ->
+		%% Store and close
+	%%	database:write_zone(Data),
+	%%	zonemaster ! {zone_inactive, Id},
+
+	%%	ok;
+	%%true ->
+	%%	messagePlayers(UpdatedPlayers, Name, Killer, player_died),  %% new message!
+
+	%%	loop(UpdatedPlayers, Data)
+	%%end;
+
+	%% Player ! {receive_exp, Amount}
+
+	%% messagePlayers(Players, Name, Mob, Amount, player_damage), %% Mob hits Name for Amount damage.
+	%% Player ! {take_damage, Amount}
+	%% Player ! {skill, Player, Skill, Target}
+
+
+
+%% Player {PID, NAME, STATUS, AS, TOHIT, DAMAGE, DV(defensive value), PV(protection value)}
+
+%% Eller vi bör hämta detta ur databasen.
+
+%%kill message (attack, Attacker, Target, AS, ToHit, Damage, Type),
+
+%%case Status of 
+%%	combat -> Player ! already_in_combat
+%%		  loop
+
+%%	normal -> 
+%%		calculate if hit.
+%%		send message to everyone of the outcome
+%%		if NPC make him aggro Player and set timer for new attack
+%%		if AnotherPlayer send him damage report if any.
+%%		set timer for new attack depending on AS
+%%		loop
+
+%%	fleeing -> loop
+%%	dead -> loop
+
+%%{flee, Player} -> set Player status = fleeing
+%%		  message other Players that Player is trying to flee
+%%		  set timer for flee attempt
+%%		  loop
 
 	%% A 'attack/kill target' command from a player
 	%%{attack, Player, Target, Damage, Hit} ->
@@ -178,12 +241,15 @@ look(Players, Zone) ->
 	 %% 		format_item(Amount, Item) end, Zone#zone.items),
       "\n").
 
-
 format_item(Amount, Item) ->
     lists:flatten(
       io_lib:format(
 	"~d ~s", [Amount, Item#item.name])).
 
+
+exits_message([{Exit,_}]) ->
+    "There is an exit to the " ++ atom_to_list(Exit);
 exits_message(Exits) ->
     "There are exits to " ++ 
 	string:join(lists:map(fun ({Dir, _}) -> atom_to_list(Dir) end, Exits), ", ").
+

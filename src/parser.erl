@@ -8,7 +8,8 @@
 %%       Command = {go, Direction} | look | logout
 %%       Direction = north | east | south | west
 parse(String) ->
-    case parser_grammar:parse(String) of
+    UnicodeBinary = unicode:characters_to_binary(String, latin1),
+    case parser_grammar:parse(UnicodeBinary) of
 	{_, _, {{line, _}, {column,_}}} -> parse_error;
 	{fail, _} -> parse_error;
 	Result -> Result
@@ -27,4 +28,5 @@ parse_test_() ->
      ?_assertEqual({go, south}, parse("s")),
      ?_assertEqual(exits      , parse("exits")),
      ?_assertEqual({say, "tt"}, parse("say tt")),
+     ?_assertEqual({say, "ед"}, parse("say ед")),
      ?_assertEqual(parse_error, parse("go southish"))].
