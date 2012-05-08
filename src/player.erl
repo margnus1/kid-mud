@@ -11,15 +11,13 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2, command/2, player_logout/2, message/2, say/3, player_leave/3, player_enter/3]).
+-export([start_link/2, command/2, message/2, kick/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
-
--record(state, {}).
 
 %%%===================================================================
 %%% API
@@ -34,6 +32,30 @@
 %%--------------------------------------------------------------------
 start_link(Name, Console) ->
     gen_server:start_link(?MODULE, [Name, Console], []).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%
+%% @end
+%%--------------------------------------------------------------------
+command(Player, Command) ->
+    gen_server:cast(Player, {command, Command}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%
+%% @end
+%%--------------------------------------------------------------------
+message(Player, Message) ->
+    gen_server:cast(Player, {message, Message}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%
+%% @end
+%%--------------------------------------------------------------------
+kick(Player) ->
+    gen_server:cast(Player, kick).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -52,9 +74,10 @@ start_link(Name, Console) ->
 %%--------------------------------------------------------------------
 init([Name, Console]) ->
     Player = database:read_player(Name),
-    ZonePID = zonemaster:get_zone(Player#player.location),
-    ZonePID ! {enter, self(), Name, login},
-    {ok, {Console, ZonePID, Player}}.
+    Zone = zonemaster:get_zone(Player#player.location),
+    zone:enter(Zone, self(), Name, login),
+    Console ! {message, "Welcome to Kid-MUD!"},
+    {ok, {Console, Zone, Player}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -70,7 +93,8 @@ init([Name, Console]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
+handle_call(Request, _From, State) ->
+    io:fwrite("Unknown call to player ~p: ~p~n", [self(), Request]),
     {noreply, State}.
 
 
@@ -84,38 +108,37 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({command, Command}, OldState = {Console, ZonePID, Player}) ->
+handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
     case parser:parse(Command) of
 
 	{go, Direction} ->
-	    ZonePID ! {go, self(), Direction},
-	    receive 
-		{go, Id} ->
+	    case zone:go(Zone, self(), Direction) of
+		{ok, Id} ->
 		    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
+		    
+		    NewZone = zonemaster:get_zone(Id),
+		    zone:enter(NewZone, self(), Player#player.name, Direction),
+		    {noreply, {Console, NewZone, Player#player{location=Id}}};
 
-		    NewZonePID = zonemaster:get_zone(Id),
-		    NewZonePID ! {enter, self(), Player#player.name, Direction},
-		    {noreply, {Console, NewZonePID, Player#player{location=Id}}};
-
-		{go, error, doesnt_exist} ->
+		{error, doesnt_exist} ->
 		    Console ! {message, "You cannot go that way"},
 		    {noreply, OldState}
 	    end;
 
 	{say, Message} ->
-	    ZonePID ! {say, self(), Message},
+	    zone:say(Zone, self(), Message),
 	    {noreply, OldState};
 
 	logout ->
-	    ZonePID ! {logout, self(), Player#player.name},
+	    zone:logout(Zone, self()),
 	    {stop, logout, OldState};
 
 	exits ->
-	    ZonePID ! {exits, self()},
+	    zone:exits(Zone, self()),
 	    {noreply, OldState};
 
 	look ->
-	    ZonePID ! {look, self()},
+	    zone:look(Zone, self()),
 	    {noreply, OldState};
 
 	parse_error ->
@@ -124,40 +147,17 @@ handle_cast({command, Command}, OldState = {Console, ZonePID, Player}) ->
 
     end;
 
-
-handle_cast({player_logout, Name}, OldState={Console,_,_}) ->
-    Console ! {message, Name ++ " logged out"},
-    {noreply, OldState};
-
-
 handle_cast({message, Description}, OldState={Console,_,_}) ->
     Console ! {message, Description},
     {noreply, OldState};
 
 
-handle_cast({say, Name, Message}, OldState={Console,_,_}) ->
-    Console ! {message, Name ++ " says: " ++ Message},
-    {noreply, OldState};
+handle_cast(kick, State={Console,_,_}) ->
+    Console ! {message, "You have been kicked!"},
+    {stop, kick, State};
 
-
-handle_cast({player_leave, Name, Direction}, OldState={Console,_,_}) ->
-    Console ! {message, Name ++ " went " ++ atom_to_list(Direction)},
-    {noreply, OldState};
-
-
-handle_cast({player_enter, Name, Direction}, OldState={Console,_,_}) ->
-    Message = case Direction of 
-		  north -> " arrives from south";
-		  east -> " arrives from west";
-		  south -> " arrives from north";
-		  west -> " arrives from east";
-		  login -> " logged in"
-	      end,
-    Console ! {message, Name ++ Message},
-    {noreply, OldState};
-
-
-handle_cast(_, State) ->
+handle_cast(Msg, State) ->
+    io:fwrite("Unknown cast to player ~p: ~p~n", [self(), Msg]),
     {noreply, State}.
 
 
@@ -172,7 +172,8 @@ handle_cast(_, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
+handle_info(Info, State) ->
+    io:fwrite("Unknown info to player ~p: ~p~n", [self(), Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -205,50 +206,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @end
-%%--------------------------------------------------------------------
-command(Player, Command) ->
-    gen_server:cast(Player, {command, Command}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @end
-%%--------------------------------------------------------------------
-player_logout(Player, Name) ->
-    gen_server:cast(Player, {player_logout, Name}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @end
-%%--------------------------------------------------------------------
-message(Player, Message) ->
-    gen_server:cast(Player, {message, Message}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @end
-%%--------------------------------------------------------------------
-say(Player, Name, Message) ->
-    gen_server:cast(Player, {say, Name, Message}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @end
-%%--------------------------------------------------------------------
-player_leave(Player, Name, Direction) ->
-    gen_server:cast(Player, {player_leave, Name, Direction}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @end
-%%--------------------------------------------------------------------
-player_enter(Player, Name, Direction) ->
-    gen_server:cast(Player, {player_enter, Name, Direction}).

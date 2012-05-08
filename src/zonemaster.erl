@@ -1,12 +1,13 @@
 -module(zonemaster).
--export([start/0, loop/1, get_zone/1]).
+-export([start/0, loop/1, get_zone/1, zone_inactive/1]).
 -include_lib("eunit/include/eunit.hrl").
 -include("zone.hrl").
 
 %% @doc Starts the zonemaster
 start() ->
     ActiveZonesTree = gb_trees:empty(),
-    Id = spawn(zonemaster, loop, [ActiveZonesTree]),
+    Id = spawn(fun () -> process_flag(trap_exit, true),
+			 loop(ActiveZonesTree) end),
     register(zonemaster, Id),
     Id.
 
@@ -19,7 +20,7 @@ loop(ActiveZonesTree) ->
 	    case gb_trees:lookup(Id, ActiveZonesTree) of
 		none ->
 		    %% Spawn a new zone
-		    ZonePid = zone:start(Id),
+		    {ok, ZonePid} = zone:start_link(Id),
 		    NewTree = gb_trees:insert(Id, ZonePid, ActiveZonesTree),
 
 		    %% Send the zone info to the player
@@ -62,18 +63,19 @@ zone_inactive(Id) ->
 test_setup() ->
     mnesia:start(),
     database:create_tables([]),
-    database:write_zone(#zone{id=1234}).
+    database:write_zone(#zone{id=1234}),    
+    database:write_zone(#zone{id=1235}),
+    start(),
+    ok.
 
 zonemaster_test_() ->
     {setup, fun test_setup/0, 
-     [fun () ->
-	      Id = start(),
-	      ?assertEqual(get_zone(1234), get_zone(1234)),
+     [?_assertEqual(get_zone(1234), get_zone(1234)),
+      ?_assertNotEqual(get_zone(1234), get_zone(1235)),
+      fun () ->
 	      TempId = get_zone(1234),
-	      Id ! {zone_inactive,1234},
+	      zonemaster ! {zone_inactive,1234},
 	      ?assert(TempId =/= get_zone(1234))
-
-
       end
      ]}.
 

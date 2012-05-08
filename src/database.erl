@@ -75,9 +75,9 @@ setup() ->
 %% @end
 create_tables(Options) ->
     {atomic, ok} = mnesia:create_table(player,
-			[{attributes, record_info(fields, player)}] ++ Options),
+	[{attributes, record_info(fields, player)}] ++ Options),
     {atomic, ok} = mnesia:create_table(zone,
-			[{attributes, record_info(fields, zone)}] ++ Options),
+	[{attributes, record_info(fields, zone)}] ++ Options),
     ok.
 
 %% @hidden
