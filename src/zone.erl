@@ -38,7 +38,8 @@ start_link(Id) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% 
+%% Receive a 'go' command from a Player
+%%
 %% @end
 %%--------------------------------------------------------------------
 go(Zone, Player, Direction) ->
@@ -47,6 +48,7 @@ go(Zone, Player, Direction) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'look' command from a Player
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -56,6 +58,7 @@ look(Zone, Player) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'enter' command from a Player
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -65,6 +68,7 @@ enter(Zone, Player, Name, Direction) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'logout' command from a Player
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -74,6 +78,7 @@ logout(Zone, Player) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'exits' command from a Player
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -83,6 +88,7 @@ exits(Zone, Player) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'kick' command
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -92,6 +98,17 @@ kick(Zone, Name) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'attack' command from a Player
+%% 
+%% @end
+%%--------------------------------------------------------------------
+%%attack(Zone, Player, Target, Damage) ->
+%%	gen_server:cast(Zone, {attack, Player, Target, Damage}).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receive a 'death' command from a Player
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -101,12 +118,12 @@ death(Zone, Player) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Receive a 'say' command from a Player
 %% 
 %% @end
 %%--------------------------------------------------------------------
 say(Zone, Player, Message) ->
     gen_server:cast(Zone, {say, Player, Message}).
-
 
 
 %%%===================================================================
@@ -234,6 +251,24 @@ handle_cast({kick, Name}, {Players, Data}) ->
 	false ->
 	    {noreply, {Players, Data}}
     end;
+
+
+%%handle_cast({attack, Player, Target, Damage}, {Players, Data}) ->
+	%%Name = get_name(Player, Players),
+
+	%% @todo Add status = combat
+	%% @todo Add NPC combat
+	%% @todo Better matchmaking
+
+	%%case lists:keyfind(Target, 2, Players) of	
+	%%	{TargetPID, _} ->
+	%%		message_players(Players, message, [Name, " hits ", Target, " for ", Damage]),
+	%%		player:damage(TargetPID, Damage); %% @todo Add damage message in player
+	%%		{noreply, {Players, Data}}
+	%%	false ->
+	%%		message_players(Players, message, ["Can't find ", Target]),
+	%%		{noreply, {Players, Data}} 
+%%	end;
 
 
 handle_cast({death, Player}, {Players, Data}) ->
@@ -386,9 +421,6 @@ zone_test_() ->
 	%%	{_, {message, Message}} ->
 	%%	        ?_assertEqual(Message, "There is an exit to the north")
 	%%    	end
-
-
-
 
       end
 
