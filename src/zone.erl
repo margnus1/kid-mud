@@ -142,7 +142,7 @@ init([Id]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({go, Player, Direction}, From, {Players, Data = #zone{id=Id, exits=Exits}}) ->
+handle_call({go, Player, Direction}, _From, {Players, Data = #zone{exits=Exits}}) ->
     E = [CurrentExits || CurrentExits = {Dir, _} <- Exits,
 			 Dir =:= Direction ],
     case E of
@@ -288,7 +288,8 @@ handle_info(Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, {Players, Data=#zone{id=Id}}) ->
-    %% @todo Inform players that the zone is shutting down
+    %% @todo Inform players properly that the zone is shutting down
+    [player:kick(Player) || Player <- Players],
 
     database:write_zone(Data),
     zonemaster:zone_inactive(Id),

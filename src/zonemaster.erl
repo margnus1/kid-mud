@@ -1,71 +1,189 @@
+%%%-------------------------------------------------------------------
+%%% @author Eroc Arnerlöv
+%%% @doc
+%%%
+%%% @end
+%%%-------------------------------------------------------------------
 -module(zonemaster).
--export([start/0, loop/1, get_zone/1, zone_inactive/1]).
+
 -include_lib("eunit/include/eunit.hrl").
 -include("zone.hrl").
 
-%% @doc Starts the zonemaster
-start() ->
-    ActiveZonesTree = gb_trees:empty(),
-    Id = spawn(fun () -> process_flag(trap_exit, true),
-			 loop(ActiveZonesTree) end),
-    register(zonemaster, Id),
-    Id.
+-behaviour(gen_server).
 
-%% @doc The main loop of the zonemaster
-loop(ActiveZonesTree) ->
-    receive 
-	%% A get_zone command from a player
-	{get_zone, Player, Id} ->
-	    %% Checks if the zone is active
-	    case gb_trees:lookup(Id, ActiveZonesTree) of
-		none ->
-		    %% Spawn a new zone
-		    {ok, ZonePid} = zone:start_link(Id),
-		    NewTree = gb_trees:insert(Id, ZonePid, ActiveZonesTree),
+%% API
+-export([start_link/0, get_zone/1, zone_inactive/1]).
 
-		    %% Send the zone info to the player
-		    Player ! {zone, ZonePid},
-		    loop(NewTree);
+%% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+	 terminate/2, code_change/3]).
 
-	       {value, Pid} ->
-		    %% Send the zone info to the player
-		    Player ! {zone, Pid},
+-define(SERVER, ?MODULE). 
 
-		    loop(ActiveZonesTree)
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-	    end;
-
-	%% A zone_inactive message from a zone that is going inactive
-	{zone_inactive, Id} ->
-	    case gb_trees:lookup(Id,ActiveZonesTree) of
-		none ->
-		    erlang:error("Trying to inactivate a zone that's not active!");
-		{value, _} ->
-		    NewTree = gb_trees:delete(Id,ActiveZonesTree),
-		    
-		    loop(NewTree)
-	    end
-    end.
-
-%% @doc Gets the pid of the zone in question
+%%--------------------------------------------------------------------
+%% @doc
+%%      Gets the pid of the zone in question
+%% @end
+%%--------------------------------------------------------------------
 get_zone(Id) ->
-    zonemaster ! {get_zone, self(), Id},
-    receive 
-	{zone, Zone} ->
-	    Zone
-    end.
+    gen_server:call(?SERVER, {get_zone, Id}).
 
-%% @doc Message that a zone is going inactive
+
+%%--------------------------------------------------------------------
+%% @doc
+%%     Message that a zone is going inactive
+%% @end
+%%--------------------------------------------------------------------
 zone_inactive(Id) ->
-    zonemaster ! {zone_inactive, Id},
+    gen_server:cast(?SERVER, {zone_inactive, Id}),
     ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the server
+%%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Initializes the server
+%%
+%% @spec init(Args) -> {ok, State} |
+%%                     {ok, State, Timeout} |
+%%                     ignore |
+%%                     {stop, Reason}
+%% @end
+%%--------------------------------------------------------------------
+init([]) ->
+    {ok, gb_trees:empty()}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling call messages
+%%
+%% @spec handle_call(Request, From, State) ->
+%%                                   {reply, Reply, State} |
+%%                                   {reply, Reply, State, Timeout} |
+%%                                   {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, Reply, State} |
+%%                                   {stop, Reason, State}
+%% @end
+%%--------------------------------------------------------------------
+handle_call({get_zone, Id}, _From, ActiveZonesTree) ->
+    case gb_trees:lookup(Id, ActiveZonesTree) of
+	none ->
+	    %% Spawn a new zone
+	    {ok, Zone} = zone:start_link(Id),
+	    NewTree = gb_trees:insert(Id, Zone, ActiveZonesTree),
+	    
+	    {reply, Zone, NewTree};
+	
+	{value, Zone} ->
+	    {reply, Zone, ActiveZonesTree}
+    end;
+
+
+handle_call(Request, _From, State) ->
+    io:fwrite("Unknown call to zonemaster: ~p~n", [Request]),
+    {reply, ok, State}.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling cast messages
+%%
+%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%%                                  {noreply, State, Timeout} |
+%%                                  {stop, Reason, State}
+%% @end
+%%--------------------------------------------------------------------
+handle_cast({zone_inactive, Id}, ActiveZonesTree) ->
+    case gb_trees:lookup(Id, ActiveZonesTree) of
+	none ->
+	    io:fwrite("Zonemaster: Got zone_inactive with an id ~p that is not active!", [Id]),
+	    {noreply, ActiveZonesTree};
+	
+	{value, _} ->
+	    NewTree = gb_trees:delete(Id,ActiveZonesTree),	    
+	    {noreply, NewTree}
+    end;
+	
+handle_cast(Msg, State) ->
+    io:fwrite("Unknown cast to zonemaster: ~p~n", [Msg]),
+    {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling all non call/cast messages
+%%
+%% @spec handle_info(Info, State) -> {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, State}
+%% @end
+%%--------------------------------------------------------------------
+handle_info(Info, State) ->
+    io:fwrite("Unknown info to zonemaster: ~p~n", [Info]),
+    {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function is called by a gen_server when it is about to
+%% terminate. It should be the opposite of Module:init/1 and do any
+%% necessary cleaning up. When it returns, the gen_server terminates
+%% with Reason. The return value is ignored.
+%%
+%% @spec terminate(Reason, State) -> void()
+%% @end
+%%--------------------------------------------------------------------
+terminate(_Reason, _State) ->
+    ok.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Convert process state when code is changed
+%%
+%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @end
+%%--------------------------------------------------------------------
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+
+%%%===================================================================
+%%% EUnit tests
+%%%===================================================================
 
 test_setup() ->
     mnesia:start(),
     database:create_tables([]),
     database:write_zone(#zone{id=1234}),    
     database:write_zone(#zone{id=1235}),
-    start(),
+    start_link(),
     ok.
 
 zonemaster_test_() ->
@@ -74,7 +192,7 @@ zonemaster_test_() ->
       ?_assertNotEqual(get_zone(1234), get_zone(1235)),
       fun () ->
 	      TempId = get_zone(1234),
-	      zonemaster ! {zone_inactive,1234},
+	      zonemaster:zone_inactive(1234),
 	      ?assert(TempId =/= get_zone(1234))
       end
      ]}.
