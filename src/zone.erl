@@ -201,19 +201,14 @@ look(Players, Zone) ->
 	 %% 		format_item(Amount, Item) end, Zone#zone.items),
       "\n").
 
-
-%%format_item(1, Item) ->
-%%lists:flatten(
-%%      io_lib:format(
-%%	"a ~s", [Amount, Item#item.name]));
 format_item(Amount, Item) ->
     lists:flatten(
       io_lib:format(
 	"~d ~s", [Amount, Item#item.name])).
 
 
-%% exits_message([{Exit,_}]) ->
-%%  "There is an exit to the " Exit;
+exits_message([{Exit,_}]) ->
+    "There is an exit to the " ++ atom_to_list(Exit);
 exits_message(Exits) ->
     "There are exits to " ++ 
 	string:join(lists:map(fun ({Dir, _}) -> atom_to_list(Dir) end, Exits), ", ").
