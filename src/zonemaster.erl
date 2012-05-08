@@ -68,6 +68,12 @@ zonemaster_test_() ->
     {setup, fun test_setup/0, 
      [fun () ->
 	      Id = start(),
-	      ?assertEqual(get_zone(1234), get_zone(1234)) end
+	      ?assertEqual(get_zone(1234), get_zone(1234)),
+	      TempId = get_zone(1234),
+	      Id ! {zone_inactive,1234},
+	      ?assert(TempId =/= get_zone(1234))
+
+
+      end
      ]}.
 
