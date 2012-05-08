@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, get_zone/1, zone_inactive/1]).
+-export([start_link/0, start/0, get_zone/1, zone_inactive/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -39,8 +39,19 @@ get_zone(Id) ->
 %% @end
 %%--------------------------------------------------------------------
 zone_inactive(Id) ->
-    gen_server:cast(?SERVER, {zone_inactive, Id}),
-    ok.
+    gen_server:cast(?SERVER, {zone_inactive, Id}).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the server without linking processes
+%%
+%% @spec start() -> {ok, Pid} | ignore | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    gen_server:start({local, ?SERVER}, ?MODULE, [], []).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -69,6 +80,7 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
+    process_flag(trap_exit, true),
     {ok, gb_trees:empty()}.
 
 %%--------------------------------------------------------------------

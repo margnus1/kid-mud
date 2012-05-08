@@ -154,7 +154,7 @@ handle_call({go, Player, Direction}, _From, {Players, Data = #zone{exits=Exits}}
 	    case lists:keydelete(Player, 1, Players) of
 
 		[] ->
-		    {stop, zone_empty, {ok, DirectionID}, {Players, Data}};
+		    {stop, normal, {ok, DirectionID}, {[], Data}};
 
 	       UpdatedPlayers ->
 		    Name = get_name(Player, Players),
@@ -203,7 +203,7 @@ handle_cast({logout, Player}, {Players, Data}) ->
     case lists:keydelete(Player, 1, Players) of 
 
 	[] ->
-	    {stop, zone_empty, {[], Data}};
+	    {stop, normal, {[], Data}};
 
 	UpdatedPlayers ->
 	    messagePlayers(UpdatedPlayers, message, 
@@ -224,7 +224,7 @@ handle_cast({kick, Name}, {Players, Data}) ->
 
 	    case lists:delete({Player,Name}, Players) of 
 		[] ->
-		    {stop, zone_empty, {[], Data}};
+		    {stop, normal, {[], Data}};
 
 		UpdatedPlayers ->
 		    messagePlayers(UpdatedPlayers, message, Name ++ " has logged out"),
@@ -243,7 +243,7 @@ handle_cast({death, Player}, {Players, Data}) ->
 
     case lists:keydelete(Player, 1, Players) of
 	[] ->
-	    {stop, zone_empty, {[], Data}};
+	    {stop, normal, {[], Data}};
 
 	UpdatedPlayers ->
 	    messagePlayers(UpdatedPlayers, message, 
@@ -289,7 +289,7 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 terminate(_Reason, {Players, Data=#zone{id=Id}}) ->
     %% @todo Inform players properly that the zone is shutting down
-    [player:kick(Player) || Player <- Players],
+    %%[player:kick(Player) || Player <- Players],
 
     database:write_zone(Data),
     zonemaster:zone_inactive(Id),
