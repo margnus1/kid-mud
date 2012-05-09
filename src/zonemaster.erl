@@ -208,7 +208,6 @@ code_change(_OldVsn, State, _Extra) ->
 
 test_setup() ->
     mnesia:start(),
-    database:create_tables([]),
     database:write_zone(#zone{id=1234}),    
     database:write_zone(#zone{id=1235}),
     start_link(),
