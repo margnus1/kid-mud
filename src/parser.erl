@@ -17,16 +17,17 @@ parse(String) ->
 
 
 parse_test_() ->
-    [?_assertEqual(parse_error, parse("")),
-     ?_assertEqual(logout     , parse("logout")),
-     ?_assertEqual(look       , parse("look")),
-     ?_assertEqual(look       , parse("l")),
-     ?_assertEqual(parse_error, parse("lo")),
-     ?_assertEqual({go, north}, parse("go north")),
-     ?_assertEqual({go, east} , parse("move e")),
-     ?_assertEqual({go, west} , parse("west")),
-     ?_assertEqual({go, south}, parse("s")),
-     ?_assertEqual(exits      , parse("exits")),
-     ?_assertEqual({say, "tt"}, parse("say tt")),
-     ?_assertEqual({say, "ед"}, parse("say ед")),
-     ?_assertEqual(parse_error, parse("go southish"))].
+    [?_assertEqual(parse_error       , parse("")),
+     ?_assertEqual(logout            , parse("logout")),
+     ?_assertEqual(look              , parse("look")),
+     ?_assertEqual(look              , parse("l")),
+     ?_assertEqual(parse_error       , parse("lo")),
+     ?_assertEqual({go, north}       , parse("go north")),
+     ?_assertEqual({go, east}        , parse("move e")),
+     ?_assertEqual({go, west}        , parse("west")),
+     ?_assertEqual({go, south}       , parse("s")),
+     ?_assertEqual(exits             , parse("exits")),
+     ?_assertEqual({say, "tt"}       , parse("say tt")),
+     ?_assertEqual({attack, "Mikael"}, parse("attack Mikael")),
+     ?_assertEqual({say, "ед"}       , parse("say ед")),
+     ?_assertEqual(parse_error       , parse("go southish"))].

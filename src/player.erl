@@ -157,6 +157,10 @@ handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
 	    zone:look(Zone, self()),
 	    {noreply, OldState};
 
+	{attack, Target} ->
+	    zone:attack(self(), Target, 1),
+	    {noreply, OldState};
+
 	parse_error ->
 	    Console ! {message, "Command not recognized"},
 	    {noreply, OldState}
@@ -171,8 +175,9 @@ handle_cast(kick, State={Console,_,_}) ->
     Console ! {message, "You have been kicked!"},
     {stop, kick, State};
 
-handle_cast(damage, State={Console,_,_}) ->
-    {noreply, State};
+handle_cast({damage, Damage}, {Console, Zone, Player}) ->
+    NewPlayer = Player#player{health={now(), get_health(Player) - Damage}},
+    {noreply, {Console, Zone, NewPlayer}};
 
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to player ~p: ~p~n", [self(), Msg]),
@@ -222,6 +227,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+get_health(#player{health={Time, Health}}) ->
+    min(Health + timer:now_diff(Time, now()) / 6000000.0, 100).
+    
+
 
 %%%===================================================================
 %%% EUnit Tests
