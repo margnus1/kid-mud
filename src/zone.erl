@@ -330,7 +330,6 @@ terminate(_Reason, {_, Data=#zone{id=Id}}) ->
     %%[player:kick(PlayerPID) || PlayerPID <- Players],
 
     database:write_zone(Data),
-    zonemaster:zone_inactive(Id),
     ok.
 
 %%--------------------------------------------------------------------
