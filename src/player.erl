@@ -173,7 +173,7 @@ handle_cast({message, Description}, State={Console,_,_}) ->
 
 handle_cast(kick, State={Console,_,_}) ->
     Console ! {message, "You have been kicked!"},
-    {stop, kick, State};
+    {stop, normal, State};
 
 handle_cast({damage, Damage}, {Console, Zone, Player}) ->
     NewPlayer = Player#player{health={now(), get_health(Player) - Damage}},
@@ -229,7 +229,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 get_health(#player{health={Time, Health}}) ->
-    min(Health + timer:now_diff(Time, now()) / 6000000.0, 100).
+    min(Health + timer:now_diff(now(), Time) / 6000000.0, 100).
     
 
 
@@ -261,6 +261,14 @@ player_test_() ->
 	     ?assertEqual(handle_cast(kick, {self(),what,ever}),
 			  {stop, kick, {self(),what,ever}}),
 	     ?assertEqual(fetch(), {message, "You have been kicked!"})
+     end,
+     fun () ->
+	     %% Test for handle_cast({damage, integer()}, {pid(),pid(),player()}
+	     Player = #player{name = "Pontus"},
+	     {noreply,{what,ever, NewPlayer}} = handle_cast({damage, 20}, {what,ever, Player}),
+	     ?assertEqual(round(element(2, NewPlayer#player.health)), 80),
+	     ControlPlayer = NewPlayer#player{health = Player#player.health},
+	     ?assertEqual(Player, ControlPlayer)
      end, 
      ?_assertEqual(handle_cast("test", state), {noreply, state})
     ].

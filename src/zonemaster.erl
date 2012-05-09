@@ -8,6 +8,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("zone.hrl").
+-include("player.hrl").
 
 -behaviour(gen_server).
 
@@ -109,7 +110,7 @@ handle_call({get_zone, Id}, _From, ActiveZonesTree) ->
     case gb_trees:lookup(Id, ActiveZonesTree) of
 	none ->
 	    %% Spawn a new zone
-	    {ok, Zone} = zone:start_link(Id),
+	    {ok, Zone} = zone_sup:start_zone(Id),
 	    NewTree = gb_trees:insert(Id, Zone, ActiveZonesTree),
 	    
 	    {reply, Zone, NewTree};
@@ -142,6 +143,7 @@ handle_cast({zone_inactive, Id}, ActiveZonesTree) ->
 	    {noreply, ActiveZonesTree};
 	
 	{value, _} ->
+	    zone_sup:stop_zone(Id),
 	    NewTree = gb_trees:delete(Id,ActiveZonesTree),	    
 	    {noreply, NewTree}
     end;
@@ -217,7 +219,18 @@ zonemaster_test_() ->
      [?_assertEqual(get_zone(1234), get_zone(1234)),
       ?_assertNotEqual(get_zone(1234), get_zone(1235)),
       fun () ->
+	      %% Creates a zone and a player named "Tomas".
+	      %% Tests if "Tomas" were created and then if "Tomas" were kicked.
 	      TempId = get_zone(1234),
+	      database:write_player(#player{name="Tomas", location=1234}),
+	      player:start_link("Tomas", self()),
+	      Test = (#player{name="Tomas", location=1234}),
+
+	      ?_assertEqual(Test,database:read_player("Tomas")),
+	      zonemaster:kick_player("Tomas"),
+
+	      ?_assertNotEqual(Test,database:read_player("Tomas")),
+	      %% Todo: Call the zone insted of just calling zonemaster to inactivate zone.
 	      zonemaster:zone_inactive(1234),
 	      ?assert(TempId =/= get_zone(1234))
       end
