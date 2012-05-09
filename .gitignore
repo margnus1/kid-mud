@@ -1,4 +1,4 @@
-ebin/*
+ebin/*.beam
 src/parser_grammar.erl
 */.DS_Store
 .DS_Store
