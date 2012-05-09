@@ -88,7 +88,7 @@ exits(Zone, PlayerPID) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'kick' command
+%% Receive a 'kick' command from zonemaster
 %% 
 %% @end
 %%--------------------------------------------------------------------
@@ -364,7 +364,6 @@ code_change(_OldVsn, State, _Extra) ->
 message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
     player:Notice(PlayerPID, Arg1), 
     message_players(Rest, Notice, Arg1);
-
 message_players([], _, _) -> ok.
 
 %% @doc Constructs a "look" message
@@ -380,11 +379,13 @@ look_message(Players, Zone) ->
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
       %% 		format_item(Amount, Item) end, Zone#zone.items),
 
+%% @doc Constructs a "item" message
 format_item(Amount, Item) ->
     lists:flatten(
       io_lib:format(
 	"~d ~s", [Amount, Item#item.name])).
 
+%% @doc Constructs a "exits" message
 exits_message([]) ->
     "You see no exit";
 exits_message([{Exit,_}]) ->
@@ -398,12 +399,19 @@ get_name(PlayerPID, Players) ->
     {_, Name} = lists:keyfind(PlayerPID, 1, Players), 
     Name.
 
+%% @doc Constructs a "arrival" message
 format_arrival(north) -> " arrives from south";
 format_arrival(east) -> " arrives from west";
 format_arrival(south) -> " arrives from north";
 format_arrival(west) -> " arrives from east";
 format_arrival(login) -> " logged in".
     
+
+%%%===================================================================
+%%% EUnit Tests
+%%%===================================================================
+
+
 test_setup() ->
     %%{ok, Testzone1} = start_link(1234),
     %%{ok, Testzone2} = start_link(1235),
@@ -420,6 +428,17 @@ fetch() ->
 zone_test_() ->
     {setup, fun test_setup/0, 
      [?_assertEqual(" arrives from south", format_arrival(north)),
+
+      ?_assertEqual({reply,{ok, 5}, {[{self(),"Arne"}],
+				     #zone{id=14, desc="A room!", exits=[{south,5}]}}},
+		    handle_call({go, self(), south}, self(), {[{self(),"Kalle"}, {self(),"Arne"}],
+				     #zone{id=14, desc="A room!", exits=[{south,5}]}})),
+
+      ?_assertEqual({'$gen_cast', {message, ["Kalle", " has left to the ", "south"]}}, fetch()),
+
+      ?_assertEqual({reply,{error,doesnt_exist}, {[],#zone{id=14, desc="A room!", exits=[]}}},
+		    handle_call({go, self(), south}, self(), {[],#zone{id=14, desc="A room!", exits=[]}})),
+
       ?_assertEqual({noreply, {[{self(),"Arne"}],[]}},
 		    handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]})),
       ?_assertEqual({'$gen_cast', {message, ["Arne", " says \"", "Message", "\""]}}, fetch()),
@@ -434,7 +453,7 @@ zone_test_() ->
       fun () ->
 	      {'$gen_cast', {message, Message}} = fetch(),
 	      ?assertEqual("A room!", lists:flatten(Message)),
-	      fetch() % exits
+	      fetch() % exits, already tested
       end,
 
       fun () ->
@@ -481,6 +500,5 @@ zone_test_() ->
 		?assertEqual({'$gen_cast', {message, ["Timmy", " has logged out"]}},
 			     fetch())
       end
-
 
      ]}.
