@@ -1,8 +1,13 @@
-command <- logout_command / exits_command / say_command / look_command / move_command ;
+command <- logout_command / exits_command / attack_command / say_command / look_command / move_command ;
 
 say_command <- "say " .* `
 [_, Letters] = Node,
 {say, unicode:characters_to_list(Letters)}
+`;
+
+attack_command <- "attack " .* `
+[_, Letters] = Node,
+{attack, unicode:characters_to_list(Letters)}
 `;
 
 exits_command <- "exits" `exits`;

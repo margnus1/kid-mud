@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author Eroc Arnerlöv
+%%% @author Eric Arnerlöv
 %%% @doc
 %%%
 %%% @end
@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start/0, get_zone/1, zone_inactive/1]).
+-export([start_link/0, start/0, get_zone/1, zone_inactive/1,kick_player/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -31,6 +31,14 @@
 %%--------------------------------------------------------------------
 get_zone(Id) ->
     gen_server:call(?SERVER, {get_zone, Id}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%      Call every zone to kick a player by the player Name.
+%% @end
+%%--------------------------------------------------------------------
+kick_player(Name) ->
+    gen_server:cast(?SERVER, {kick_player, Name}).
 
 
 %%--------------------------------------------------------------------
@@ -111,6 +119,7 @@ handle_call({get_zone, Id}, _From, ActiveZonesTree) ->
     end;
 
 
+
 handle_call(Request, _From, State) ->
     io:fwrite("Unknown call to zonemaster: ~p~n", [Request]),
     {reply, ok, State}.
@@ -136,6 +145,11 @@ handle_cast({zone_inactive, Id}, ActiveZonesTree) ->
 	    NewTree = gb_trees:delete(Id,ActiveZonesTree),	    
 	    {noreply, NewTree}
     end;
+
+handle_cast({kick_player,Name},ActiveZonesTree)->
+    ZoneLists = gb_trees:values(ActiveZonesTree),
+    lists:foreach(fun(H)-> zone:kick(H,Name) end, ZoneLists),
+    {noreply, ActiveZonesTree};
 	
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to zonemaster: ~p~n", [Msg]),
@@ -208,4 +222,3 @@ zonemaster_test_() ->
 	      ?assert(TempId =/= get_zone(1234))
       end
      ]}.
-

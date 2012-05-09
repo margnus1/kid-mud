@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2, command/2, message/2, kick/1]).
+-export([start_link/2, command/2, message/2, kick/1, damage/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -64,6 +64,15 @@ message(Player, Message) ->
 %%--------------------------------------------------------------------
 kick(Player) ->
     gen_server:cast(Player, kick).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Inform the player that he has taken damage
+%%
+%% @end
+%%--------------------------------------------------------------------
+damage(Player, Damage) ->
+    gen_server:cast(Player, {damage, Damage}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -148,10 +157,13 @@ handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
 	    zone:look(Zone, self()),
 	    {noreply, OldState};
 
+	{attack, Target} ->
+	    zone:attack(Zone, self(), Target, 1),
+	    {noreply, OldState};
+
 	parse_error ->
 	    Console ! {message, "Command not recognized"},
 	    {noreply, OldState}
-
     end;
 
 handle_cast({message, Description}, State={Console,_,_}) ->
@@ -163,10 +175,13 @@ handle_cast(kick, State={Console,_,_}) ->
     Console ! {message, "You have been kicked!"},
     {stop, kick, State};
 
+handle_cast({damage, Damage}, {Console, Zone, Player}) ->
+    NewPlayer = Player#player{health={now(), get_health(Player) - Damage}},
+    {noreply, {Console, Zone, NewPlayer}};
+
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to player ~p: ~p~n", [self(), Msg]),
     {noreply, State}.
-
 
 
 %%--------------------------------------------------------------------
@@ -212,6 +227,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+get_health(#player{health={Time, Health}}) ->
+    min(Health + timer:now_diff(Time, now()) / 6000000.0, 100).
+    
+
 
 %%%===================================================================
 %%% EUnit Tests

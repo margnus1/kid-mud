@@ -13,7 +13,7 @@
 
 %% API
 -export([start_link/1, go/3, look/2, enter/4, logout/2, exits/2,
-	 kick/2, death/2, say/3]).
+	 kick/2, death/2, attack/4, say/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -42,8 +42,8 @@ start_link(Id) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
-go(Zone, Player, Direction) ->
-    gen_server:call(Zone, {go, Player, Direction}).
+go(Zone, PlayerPID, Direction) ->
+    gen_server:call(Zone, {go, PlayerPID, Direction}).
 
 
 %%--------------------------------------------------------------------
@@ -52,8 +52,8 @@ go(Zone, Player, Direction) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-look(Zone, Player) ->
-    gen_server:cast(Zone, {look, Player}).
+look(Zone, PlayerPID) ->
+    gen_server:cast(Zone, {look, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
@@ -62,8 +62,8 @@ look(Zone, Player) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-enter(Zone, Player, Name, Direction) ->
-    gen_server:cast(Zone, {enter, Player, Name, Direction}).
+enter(Zone, PlayerPID, Name, Direction) ->
+    gen_server:cast(Zone, {enter, PlayerPID, Name, Direction}).
 
 
 %%--------------------------------------------------------------------
@@ -72,8 +72,8 @@ enter(Zone, Player, Name, Direction) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-logout(Zone, Player) ->
-    gen_server:cast(Zone, {logout, Player}).
+logout(Zone, PlayerPID) ->
+    gen_server:cast(Zone, {logout, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
@@ -82,8 +82,8 @@ logout(Zone, Player) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-exits(Zone, Player) ->
-    gen_server:cast(Zone, {exits, Player}).
+exits(Zone, PlayerPID) ->
+    gen_server:cast(Zone, {exits, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
@@ -102,8 +102,8 @@ kick(Zone, Name) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-%%attack(Zone, Player, Target, Damage) ->
-%%	gen_server:cast(Zone, {attack, Player, Target, Damage}).
+attack(Zone, PlayerPID, Target, Damage) ->
+	gen_server:cast(Zone, {attack, PlayerPID, Target, Damage}).
 
 
 %%--------------------------------------------------------------------
@@ -112,8 +112,8 @@ kick(Zone, Name) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-death(Zone, Player) ->
-    gen_server:cast(Zone, {death, Player}).
+death(Zone, PlayerPID) ->
+    gen_server:cast(Zone, {death, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
@@ -122,8 +122,8 @@ death(Zone, Player) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-say(Zone, Player, Message) ->
-    gen_server:cast(Zone, {say, Player, Message}).
+say(Zone, PlayerPID, Message) ->
+    gen_server:cast(Zone, {say, PlayerPID, Message}).
 
 
 %%%===================================================================
@@ -160,7 +160,7 @@ init([Id]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({go, Player, Direction}, _From, {Players, Data = #zone{exits=Exits}}) ->
+handle_call({go, PlayerPID, Direction}, _From, {Players, Data = #zone{exits=Exits}}) ->
     E = [CurrentExits || CurrentExits = {Dir, _} <- Exits,
 			 Dir =:= Direction ],
     case E of
@@ -168,13 +168,13 @@ handle_call({go, Player, Direction}, _From, {Players, Data = #zone{exits=Exits}}
 	    {reply, {error, doesnt_exist}, {Players, Data}};
 
 	[{_, DirectionID}] -> 
-	    case lists:keydelete(Player, 1, Players) of
+	    case lists:keydelete(PlayerPID, 1, Players) of
 
 		[] ->
 		    {stop, normal, {ok, DirectionID}, {[], Data}};
 
 	       UpdatedPlayers ->
-		    Name = get_name(Player, Players),
+		    Name = get_name(PlayerPID, Players),
 		    message_players(UpdatedPlayers, message, 
 				   [Name, " has left to the ", 
 				       atom_to_list(Direction)]),
@@ -199,47 +199,47 @@ handle_call(Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 
-handle_cast({look, Player}, State={Players, Data = #zone{exits=Exits}}) ->
-    player:message(Player, look_message(lists:keydelete(Player, 1, Players), Data)),
-    player:message(Player, exits_message(Exits)),
+handle_cast({look, PlayerPID}, State={Players, Data = #zone{exits=Exits}}) ->
+    player:message(PlayerPID, look_message(lists:keydelete(PlayerPID, 1, Players), Data)),
+    player:message(PlayerPID, exits_message(Exits)),
     {noreply, State};
 
 
-handle_cast({enter, Player, Name, Direction}, {Players, Data = #zone{exits=Exits}}) ->
-    player:message(Player, look_message(Players, Data)),
-    player:message(Player, exits_message(Exits)),
+handle_cast({enter, PlayerPID, Name, Direction}, {Players, Data = #zone{exits=Exits}}) ->
+    player:message(PlayerPID, look_message(Players, Data)),
+    player:message(PlayerPID, exits_message(Exits)),
 
     message_players(Players, message, [Name, format_arrival(Direction)]),
 
-    UpdatedPlayers = [{Player, Name} | Players],
+    UpdatedPlayers = [{PlayerPID, Name} | Players],
 
     {noreply, {UpdatedPlayers, Data}};
 
 
-handle_cast({logout, Player}, {Players, Data}) ->
-    case lists:keydelete(Player, 1, Players) of 
+handle_cast({logout, PlayerPID}, {Players, Data}) ->
+    case lists:keydelete(PlayerPID, 1, Players) of 
 
 	[] ->
 	    {stop, normal, {[], Data}};
 
 	UpdatedPlayers ->
 	    message_players(UpdatedPlayers, message, 
-			   [get_name(Player, Players), " has logged out"]),
+			    [get_name(PlayerPID, Players), " has logged out"]),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
 
-handle_cast({exits, Player}, State={_,#zone{exits=Exits}}) ->
-    player:message(Player, exits_message(Exits)),
+handle_cast({exits, PlayerPID}, State={_,#zone{exits=Exits}}) ->
+    player:message(PlayerPID,exits_message(Exits)),
     {noreply, State};
 
 
 handle_cast({kick, Name}, {Players, Data}) ->
     case lists:keyfind(Name, 2, Players) of 
-	{Player, _} ->
-	    player:kick(Player),
+	{PlayerPID, _} ->
+	    player:kick(PlayerPID),
 
-	    case lists:delete({Player,Name}, Players) of 
+	    case lists:delete({PlayerPID,Name}, Players) of 
 		[] ->
 		    {stop, normal, {[], Data}};
 
@@ -253,40 +253,41 @@ handle_cast({kick, Name}, {Players, Data}) ->
     end;
 
 
-%%handle_cast({attack, Player, Target, Damage}, {Players, Data}) ->
-	%%Name = get_name(Player, Players),
+handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 
-	%% @todo Add status = combat
-	%% @todo Add NPC combat
-	%% @todo Better matchmaking
+    Name = get_name(PlayerPID, Players),
 
-	%%case lists:keyfind(Target, 2, Players) of	
-	%%	{TargetPID, _} ->
-	%%		message_players(Players, message, [Name, " hits ", Target, " for ", Damage]),
-	%%		player:damage(TargetPID, Damage); %% @todo Add damage message in player
-	%%		{noreply, {Players, Data}}
-	%%	false ->
-	%%		message_players(Players, message, ["Can't find ", Target]),
-	%%		{noreply, {Players, Data}} 
-%%	end;
+    %% @todo Add status = combat
+    %% @todo Add NPC combat
+    %% @todo Better matchmaking
+
+    case lists:keyfind(Target, 2, Players) of	
+	{TargetPID, _} ->
+	    message_players(Players, message, io_lib:format("~s hits ~s for ~p", [Name, Target, Damage])),
+	    player:damage(TargetPID, Damage),
+	    {noreply, {Players, Data}};
+	false ->
+	    player:message(PlayerPID, ["Can't find ", Target]),
+	    {noreply, {Players, Data}} 
+    end;
 
 
-handle_cast({death, Player}, {Players, Data}) ->
-    Name = get_name(Player, Players),
+handle_cast({death, PlayerPID}, {Players, Data}) ->
+    Name = get_name(PlayerPID, Players),
 
-    case lists:keydelete(Player, 1, Players) of
+    case lists:keydelete(PlayerPID, 1, Players) of
 	[] ->
 	    {stop, normal, {[], Data}};
 
 	UpdatedPlayers ->
 	    message_players(UpdatedPlayers, message, 
-			   [Name, " has been slain!"]),
+			    [Name, " has been slain!"]),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
 
-handle_cast({say, Player, Message}, State={Players,_}) ->
-    Name = get_name(Player, Players),
+handle_cast({say, PlayerPID, Message}, State={Players,_}) ->
+    Name = get_name(PlayerPID, Players),
     message_players(Players, message, [Name, " says \"", Message, "\""]),
     {noreply, State};
 
@@ -320,9 +321,9 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {Players, Data=#zone{id=Id}}) ->
+terminate(_Reason, {_, Data=#zone{id=Id}}) ->
     %% @todo Inform players properly that the zone is shutting down
-    %%[player:kick(Player) || Player <- Players],
+    %%[player:kick(PlayerPID) || PlayerPID <- Players],
 
     database:write_zone(Data),
     zonemaster:zone_inactive(Id),
@@ -343,23 +344,22 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% CURRENTLY UNUSED
 %% @doc Sends a message to all the players in the zone
-message_players([{Player, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
-    player:Notice(Player, Arg1, Arg2, Arg3), 
-    message_players(Rest, Notice, Arg1, Arg2, Arg3);
-
-message_players([], _, _, _, _) -> ok.
-
-%% @doc Sends a message to all the players in the zone
-message_players([{Player, _}|Rest], Notice, Arg1, Arg2) ->
-    player:Notice(Player, Arg1, Arg2),
-    message_players(Rest, Notice, Arg1, Arg2);
-
-message_players([], _, _, _) -> ok.
+%%message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
+%%    player:Notice(PlayerPID, Arg1, Arg2, Arg3), 
+%%    message_players(Rest, Notice, Arg1, Arg2, Arg3);
+%%message_players([], _, _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
-message_players([{Player, _}|Rest], Notice, Arg1) ->
-    player:Notice(Player, Arg1), 
+%%message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2) ->
+%%    player:Notice(PlayerPID, Arg1, Arg2),
+%%    message_players(Rest, Notice, Arg1, Arg2);
+%%message_players([], _, _, _) -> ok.
+
+%% @doc Sends a message to all the players in the zone
+message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
+    player:Notice(PlayerPID, Arg1), 
     message_players(Rest, Notice, Arg1);
 
 message_players([], _, _) -> ok.
@@ -368,15 +368,14 @@ message_players([], _, _) -> ok.
 -spec look_message(Players::[player()], Zone::zone()) -> string().
 
 look_message(Players, Zone) ->
-    string:join(
-      [Zone#zone.desc] ++
-	  %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
-	  %% 		       Zone#zone.npc) ++
-	  lists:map(fun({_, Name}) -> "Here stands " ++ Name end,
-		    Players), %% ++
+    [Zone#zone.desc, "\n",
+     %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
+     %% 		       Zone#zone.npc) ++
+     colour:text(blue, lists:map(fun({_, Name}) -> 
+					["Here stands ", Name, "\n"] end,
+				Players))]. %% ++
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
       %% 		format_item(Amount, Item) end, Zone#zone.items),
-      "\n").
 
 format_item(Amount, Item) ->
     lists:flatten(
@@ -390,8 +389,8 @@ exits_message(Exits) ->
 	string:join(lists:map(fun ({Dir, _}) -> atom_to_list(Dir) end, Exits), ", ").
 
 %% @doc Gets the name of the player with PID Player from player list Players
-get_name(Player, Players) ->
-    {_, Name} = lists:keyfind(Player, 1, Players), 
+get_name(PlayerPID, Players) ->
+    {_, Name} = lists:keyfind(PlayerPID, 1, Players), 
     Name.
 
 format_arrival(north) -> " arrives from south";
@@ -401,8 +400,8 @@ format_arrival(west) -> " arrives from east";
 format_arrival(login) -> " logged in".
     
 test_setup() ->
-    {ok, Testzone1} = start_link(1234),
-    {ok, Testzone2} = start_link(1235),
+    %%{ok, Testzone1} = start_link(1234),
+    %%{ok, Testzone2} = start_link(1235),
     ok.
 
 zone_test_() ->
@@ -410,17 +409,18 @@ zone_test_() ->
      [?_assertEqual(format_arrival(north), " arrives from south"),
 
       fun () ->
-	handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
-	receive
-		{_, {message, Message}} ->
-			?_assertEqual(Message, "Arne says \"Message\"")
-		end
+	      handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
+	      receive
+		  {_, {message, Message}} ->
+		      ?_assertEqual(Message, "Arne says \"Message\"")
+	      end
 
-	%% handle_cast({exits, self()}, {[{self(),"Arne"}],[{north,1}]}),
-	%% receive
-	%%	{_, {message, Message}} ->
-	%%	        ?_assertEqual(Message, "There is an exit to the north")
-	%%    	end
+	      %%handle_cast({exits, self()}, {[{self(),"Arne"}],[{north,1}]}),
+	      %%receive
+	      %%  {_, {message, Message}} ->
+	      %%    ?_assertEqual(Message, "There is an exit to the north")
+	      %%end
+
 
       end
 
