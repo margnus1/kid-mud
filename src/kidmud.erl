@@ -1,86 +1,59 @@
 %%%-------------------------------------------------------------------
-%%% @author Magnus Lång <mala7837@beurling.it.uu.se>
+%%% @author Magnus Lang <mala7837@svedberg.it.uu.se>
 %%% @copyright (C) 2012, Magnus Lang
 %%% @doc
-%%%      Main supervisor for the Kid-MUD server
+%%%    The Kid-MUD application module
 %%% @end
-%%% Created :  9 May 2012 by Magnus Laåg <mala7837@beurling.it.uu.se>
+%%% Created :  9 May 2012 by Magnus Lang <mala7837@svedberg.it.uu.se>
 %%%-------------------------------------------------------------------
 -module(kidmud).
 
--behaviour(supervisor).
+-behaviour(application).
 
-%% API
--export([start_link/0, start/0]).
-
-%% Supervisor callbacks
--export([init/1]).
-
--define(SERVER, ?MODULE).
+%% Application callbacks
+-export([start/2, stop/1]).
 
 %%%===================================================================
-%%% API functions
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the supervisor whithout a link.
-%% To be used from shell when debugging only.
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-start() ->
-    {ok, Pid} = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
-    unlink(Pid).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the supervisor
-%%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-
-%%%===================================================================
-%%% Supervisor callbacks
+%%% Application callbacks
 %%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Whenever a supervisor is started using supervisor:start_link/[2,3],
-%% this function is called by the new process to find out about
-%% restart strategy, maximum restart frequency and child
-%% specifications.
+%% This function is called whenever an application is started using
+%% application:start/[1,2], and should start the processes of the
+%% application. If the application is structured according to the OTP
+%% design principles as a supervision tree, this means starting the
+%% top supervisor of the tree.
 %%
-%% @spec init(Args) -> {ok, {SupFlags, [ChildSpec]}} |
-%%                     ignore |
-%%                     {error, Reason}
+%% @spec start(StartType, StartArgs) -> {ok, Pid} |
+%%                                      {ok, Pid, State} |
+%%                                      {error, Reason}
+%%      StartType = normal | {takeover, Node} | {failover, Node}
+%%      StartArgs = term()
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
-    RestartStrategy = one_for_one,
-    MaxRestarts = 1000,
-    MaxSecondsBetweenRestarts = 3600,
-
-    SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
-
-    Restart = permanent,
-    Shutdown = 2000, % timeout
-
-    %% How do we supervise this?
+start(_StartType, _StartArgs) ->
     database:start(),
+    case master_supervisor:start_link() of
+	{ok, Pid} ->
+	    {ok, Pid};
+	Error ->
+	    Error
+		end.
 
-    Zonemaster = {"Zone master", {zonemaster, start_link, []},
-		  Restart, Shutdown, worker, [zonemaster]},
-
-    ZoneSup = {"Zone Supervisor", {zone_sup, start_link, []},
-	       Restart, Shutdown, supervisor, [zone_sup]},
-
-    {ok, {SupFlags, [Zonemaster, ZoneSup]}}.
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function is called whenever an application has stopped. It
+%% is intended to be the opposite of Module:start/2 and should do
+%% any necessary cleaning up. The return value is ignored.
+%%
+%% @spec stop(State) -> void()
+%% @end
+%%--------------------------------------------------------------------
+stop(_State) ->
+    ok.
 
 %%%===================================================================
 %%% Internal functions
