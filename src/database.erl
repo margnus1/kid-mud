@@ -92,7 +92,9 @@ database_test_() ->
     {setup, fun test_setup/0, 
      [fun() -> write_player(Korv),
                ?assertEqual(Korv, read_player("Korv")) end,
-      ?_assertEqual(#player{name="Gustav"}, read_player("Gustav")),
+      fun () ->
+	      #player{health=Health} = G = read_player("Gustav"),
+	      ?assertEqual(#player{name="Gustav", health=Health}, G) end,
       ?_assertEqual(read_zone(0), zone_not_found),
       fun() -> write_zone(Five),
                ?assertEqual(read_zone(5), Five) end]}.
