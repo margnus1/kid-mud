@@ -110,7 +110,7 @@ handle_call({get_zone, Id}, _From, ActiveZonesTree) ->
     case gb_trees:lookup(Id, ActiveZonesTree) of
 	none ->
 	    %% Spawn a new zone
-	    {ok, Zone} = zone_sup:start_zone(Id),
+	    Zone = zone_sup:start_zone(Id),
 	    NewTree = gb_trees:insert(Id, Zone, ActiveZonesTree),
 	    
 	    {reply, Zone, NewTree};
