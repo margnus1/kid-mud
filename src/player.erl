@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2, command/2, message/2, kick/1]).
+-export([start_link/2, command/2, message/2, kick/1, damage/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -64,6 +64,15 @@ message(Player, Message) ->
 %%--------------------------------------------------------------------
 kick(Player) ->
     gen_server:cast(Player, kick).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Inform the player that he has taken damage
+%%
+%% @end
+%%--------------------------------------------------------------------
+damage(Player, Damage) ->
+    gen_server:cast(Player, {damage, Damage}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -151,7 +160,6 @@ handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
 	parse_error ->
 	    Console ! {message, "Command not recognized"},
 	    {noreply, OldState}
-
     end;
 
 handle_cast({message, Description}, State={Console,_,_}) ->
@@ -163,10 +171,12 @@ handle_cast(kick, State={Console,_,_}) ->
     Console ! {message, "You have been kicked!"},
     {stop, kick, State};
 
+handle_cast(damage, State={Console,_,_}) ->
+    {noreply, State};
+
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to player ~p: ~p~n", [self(), Msg]),
     {noreply, State}.
-
 
 
 %%--------------------------------------------------------------------

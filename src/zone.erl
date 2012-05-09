@@ -102,8 +102,8 @@ kick(Zone, Name) ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
-%%attack(Zone, Player, Target, Damage) ->
-%%	gen_server:cast(Zone, {attack, Player, Target, Damage}).
+attack(Zone, Player, Target, Damage) ->
+	gen_server:cast(Zone, {attack, Player, Target, Damage}).
 
 
 %%--------------------------------------------------------------------
@@ -224,13 +224,13 @@ handle_cast({logout, Player}, {Players, Data}) ->
 
 	UpdatedPlayers ->
 	    message_players(UpdatedPlayers, message, 
-			   [get_name(Player, Players), " has logged out"]),
+			    [get_name(Player, Players), " has logged out"]),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
 
 handle_cast({exits, Player}, State={_,#zone{exits=Exits}}) ->
-    player:message(Player, exits_message(Exits)),
+    player:message(Player,exits_message(Exits)),
     {noreply, State};
 
 
@@ -253,22 +253,23 @@ handle_cast({kick, Name}, {Players, Data}) ->
     end;
 
 
-%%handle_cast({attack, Player, Target, Damage}, {Players, Data}) ->
-	%%Name = get_name(Player, Players),
+handle_cast({attack, Player, Target, Damage}, {Players, Data}) ->
 
-	%% @todo Add status = combat
-	%% @todo Add NPC combat
-	%% @todo Better matchmaking
+    Name = get_name(Player, Players),
 
-	%%case lists:keyfind(Target, 2, Players) of	
-	%%	{TargetPID, _} ->
-	%%		message_players(Players, message, [Name, " hits ", Target, " for ", Damage]),
-	%%		player:damage(TargetPID, Damage); %% @todo Add damage message in player
-	%%		{noreply, {Players, Data}}
-	%%	false ->
-	%%		message_players(Players, message, ["Can't find ", Target]),
-	%%		{noreply, {Players, Data}} 
-%%	end;
+    %% @todo Add status = combat
+    %% @todo Add NPC combat
+    %% @todo Better matchmaking
+
+    case lists:keyfind(Target, 2, Players) of	
+	{TargetPID, _} ->
+	    message_players(Players, message, [Name, " hits ", Target, " for ", Damage]),
+	    player:damage(TargetPID, Damage),
+	    {noreply, {Players, Data}};
+	false ->
+	    message_players(Players, message, ["Can't find ", Target]),
+	    {noreply, {Players, Data}} 
+    end;
 
 
 handle_cast({death, Player}, {Players, Data}) ->
@@ -280,7 +281,7 @@ handle_cast({death, Player}, {Players, Data}) ->
 
 	UpdatedPlayers ->
 	    message_players(UpdatedPlayers, message, 
-			   [Name, " has been slain!"]),
+			    [Name, " has been slain!"]),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
@@ -368,15 +369,15 @@ message_players([], _, _) -> ok.
 -spec look_message(Players::[player()], Zone::zone()) -> string().
 
 look_message(Players, Zone) ->
-    string:join(
-      [Zone#zone.desc] ++
-	  %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
-	  %% 		       Zone#zone.npc) ++
-	  lists:map(fun({_, Name}) -> "Here stands " ++ Name end,
-		    Players), %% ++
+    [Zone#zone.desc, "\n",
+     %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
+     %% 		       Zone#zone.npc) ++
+     color:text(blue, lists:map(fun({_, Name}) -> 
+					["Here stands ", Name, "\n"] end,
+				Players))]. %% ++
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
       %% 		format_item(Amount, Item) end, Zone#zone.items),
-      "\n").
+
 
 format_item(Amount, Item) ->
     lists:flatten(
@@ -410,17 +411,18 @@ zone_test_() ->
      [?_assertEqual(format_arrival(north), " arrives from south"),
 
       fun () ->
-	handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
-	receive
-		{_, {message, Message}} ->
-			?_assertEqual(Message, "Arne says \"Message\"")
-		end
+	      handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]}),
+	      receive
+		  {_, {message, Message}} ->
+		      ?_assertEqual(Message, "Arne says \"Message\"")
+	      end
 
-	%% handle_cast({exits, self()}, {[{self(),"Arne"}],[{north,1}]}),
-	%% receive
-	%%	{_, {message, Message}} ->
-	%%	        ?_assertEqual(Message, "There is an exit to the north")
-	%%    	end
+	      %%handle_cast({exits, self()}, {[{self(),"Arne"}],[{north,1}]}),
+	      %%receive
+	      %%  {_, {message, Message}} ->
+	      %%    ?_assertEqual(Message, "There is an exit to the north")
+	      %%end
+
 
       end
 
