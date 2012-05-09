@@ -259,7 +259,7 @@ player_test_() ->
      end,
      fun () ->		  
 	     ?assertEqual(handle_cast(kick, {self(),what,ever}),
-			  {stop, kick, {self(),what,ever}}),
+			  {stop, normal, {self(),what,ever}}),
 	     ?assertEqual(fetch(), {message, "You have been kicked!"})
      end,
      fun () ->
