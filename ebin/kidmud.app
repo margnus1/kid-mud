@@ -4,6 +4,6 @@
   {modules, [client, colour, database, kidmud, maploader, master_supervisor,
 	     parser_grammar, parser, player, zone_sup, zone, zonemaster]},
   {registered, [zonemaster, zone_sup, master_supervisor]},
-  {applications, [kernel, stdlib, mnesia]}
+  {applications, [kernel, stdlib, mnesia]},
   {mod, {kidmud, []}}
  ]}.

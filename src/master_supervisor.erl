@@ -71,9 +71,6 @@ init([]) ->
     Restart = permanent,
     Shutdown = 2000, % timeout
 
-    %% How do we supervise this?
-    database:start(),
-
     Zonemaster = {"Zone master", {zonemaster, start_link, []},
 		  Restart, Shutdown, worker, [zonemaster]},
 

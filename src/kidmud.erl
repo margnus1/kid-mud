@@ -34,7 +34,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
-    database:start(),
+    %% @todo database setup/mapload
     case master_supervisor:start_link() of
 	{ok, Pid} ->
 	    {ok, Pid};

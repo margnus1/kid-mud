@@ -36,7 +36,7 @@ start_client: all
 	erl -name kidclient -pa ebin -setcookie kid-mud 
 
 start_server: all
-	erl -name kidserver -setcookie kid-mud -pa ebin -mnesia dir database -s master_supervisor
+	erl -name kidserver -setcookie kid-mud -pa ebin -mnesia dir database -s application start mnesia -s application start kidmud
 
 setup: all
 	mkdir database
