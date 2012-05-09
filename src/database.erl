@@ -49,7 +49,9 @@ write_zone(Zone) ->
 %% @doc Starts the database
 %% @spec start() -> ok | {error, Reason}
 start() ->
-    mnesia:start().
+    mnesia:start(),
+    mnesia:wait_for_tables([player, zone], 2000).
+
 
 %% @doc Stops the database
 %% @spec stop() -> ok
