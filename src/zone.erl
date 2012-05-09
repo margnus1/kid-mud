@@ -321,7 +321,7 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {Players, Data=#zone{id=Id}}) ->
+terminate(_Reason, {_, Data=#zone{id=Id}}) ->
     %% @todo Inform players properly that the zone is shutting down
     %%[player:kick(PlayerPID) || PlayerPID <- Players],
 
@@ -344,19 +344,18 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% CURRENTLY UNUSED
 %% @doc Sends a message to all the players in the zone
-message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
-    player:Notice(PlayerPID, Arg1, Arg2, Arg3), 
-    message_players(Rest, Notice, Arg1, Arg2, Arg3);
-
-message_players([], _, _, _, _) -> ok.
+%%message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
+%%    player:Notice(PlayerPID, Arg1, Arg2, Arg3), 
+%%    message_players(Rest, Notice, Arg1, Arg2, Arg3);
+%%message_players([], _, _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
-message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2) ->
-    player:Notice(PlayerPID, Arg1, Arg2),
-    message_players(Rest, Notice, Arg1, Arg2);
-
-message_players([], _, _, _) -> ok.
+%%message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2) ->
+%%    player:Notice(PlayerPID, Arg1, Arg2),
+%%    message_players(Rest, Notice, Arg1, Arg2);
+%%message_players([], _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
 message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
@@ -377,7 +376,6 @@ look_message(Players, Zone) ->
 				Players))]. %% ++
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
       %% 		format_item(Amount, Item) end, Zone#zone.items),
-
 
 format_item(Amount, Item) ->
     lists:flatten(
@@ -402,8 +400,8 @@ format_arrival(west) -> " arrives from east";
 format_arrival(login) -> " logged in".
     
 test_setup() ->
-    {ok, Testzone1} = start_link(1234),
-    {ok, Testzone2} = start_link(1235),
+    %%{ok, Testzone1} = start_link(1234),
+    %%{ok, Testzone2} = start_link(1235),
     ok.
 
 zone_test_() ->
