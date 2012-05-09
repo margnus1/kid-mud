@@ -46,7 +46,7 @@ src/parser_grammar.erl: src/parser_grammar.peg
 	erl -noshell -pa neotoma/ebin -eval "neotoma:file(\"src/parser_grammar.peg\")" -s erlang halt
 
 test: all
-	(cd ebin && erl -noinput -eval 'eunit:test({dir, "."}, [verbose]), init:stop()')
+	erl -noinput -pa ebin -eval 'eunit:test({dir, "ebin/"}, [verbose]), init:stop()'
 
 doc: $(BEAM_FILES)
 	erl -noshell -eval "edoc:files($(EDOC_SRC_LIST), [{dir, 'doc/html'}])" -s init stop
