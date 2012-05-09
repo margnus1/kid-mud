@@ -212,7 +212,7 @@ test_setup() ->
     database:write_zone(#zone{id=1234}),    
     database:write_zone(#zone{id=1235}),
     start_link(),
-    zone_sup:start(),
+    zone_sup:start_link(),
     ok.
 
 zonemaster_test_() ->
