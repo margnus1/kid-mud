@@ -8,6 +8,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("zone.hrl").
+-include("player.hrl").
 
 -behaviour(gen_server).
 
@@ -217,7 +218,18 @@ zonemaster_test_() ->
      [?_assertEqual(get_zone(1234), get_zone(1234)),
       ?_assertNotEqual(get_zone(1234), get_zone(1235)),
       fun () ->
+	      %% Creates a zone and a player named "Tomas".
+	      %% Tests if "Tomas" were created and then if "Tomas" were kicked.
 	      TempId = get_zone(1234),
+	      database:write_player(#player{name="Tomas", location=1234}),
+	      player:start_link("Tomas", self()),
+	      Test = (#player{name="Tomas", location=1234}),
+
+	      ?_assertEqual(Test,database:read_player("Tomas")),
+	      zonemaster:kick_player("Tomas"),
+
+	      ?_assertNotEqual(Test,database:read_player("Tomas")),
+	      %% Todo: Call the zone insted of just calling zonemaster to inactivate zone.
 	      zonemaster:zone_inactive(1234),
 	      ?assert(TempId =/= get_zone(1234))
       end

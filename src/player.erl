@@ -173,7 +173,7 @@ handle_cast({message, Description}, State={Console,_,_}) ->
 
 handle_cast(kick, State={Console,_,_}) ->
     Console ! {message, "You have been kicked!"},
-    {stop, kick, State};
+    {stop, normal, State};
 
 handle_cast({damage, Damage}, {Console, Zone, Player}) ->
     NewPlayer = Player#player{health={now(), get_health(Player) - Damage}},
