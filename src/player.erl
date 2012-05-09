@@ -158,7 +158,7 @@ handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
 	    {noreply, OldState};
 
 	{attack, Target} ->
-	    zone:attack(self(), Target, 1),
+	    zone:attack(Zone, self(), Target, 1),
 	    {noreply, OldState};
 
 	parse_error ->

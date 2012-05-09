@@ -13,7 +13,7 @@
 
 %% API
 -export([start_link/1, go/3, look/2, enter/4, logout/2, exits/2,
-	 kick/2, death/2, say/3]).
+	 kick/2, death/2, attack/4, say/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -263,11 +263,11 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 
     case lists:keyfind(Target, 2, Players) of	
 	{TargetPID, _} ->
-	    message_players(Players, message, [Name, " hits ", Target, " for ", Damage]),
+	    message_players(Players, message, io_lib:format("~s hits ~s for ~p", [Name, Target, Damage])),
 	    player:damage(TargetPID, Damage),
 	    {noreply, {Players, Data}};
 	false ->
-	    player:message(PlayerPID, message, ["Can't find ", Target]),
+	    player:message(PlayerPID, ["Can't find ", Target]),
 	    {noreply, {Players, Data}} 
     end;
 
@@ -371,7 +371,7 @@ look_message(Players, Zone) ->
     [Zone#zone.desc, "\n",
      %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
      %% 		       Zone#zone.npc) ++
-     color:text(blue, lists:map(fun({_, Name}) -> 
+     colour:text(blue, lists:map(fun({_, Name}) -> 
 					["Here stands ", Name, "\n"] end,
 				Players))]. %% ++
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 

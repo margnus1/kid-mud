@@ -55,7 +55,7 @@ clean:
 	rm -rf .#* *.dump
 	rm -rf ebin/*.beam
 	rm -f src/parser_grammar.erl
-	(cd doc/html && find . -name "*" -a ! -name overview.edoc -exec rm -rf {} \;)
+	-(cd doc/html && find . -name "*" -a ! -name overview.edoc -exec rm -rf {} \;)
 
 remove_finderinfo:
 	-xattr -d "com.apple.FinderInfo" src/*.erl include/*.hrl doc/* doc/html/*
