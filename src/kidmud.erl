@@ -70,14 +70,17 @@ init([]) ->
 
     Restart = permanent,
     Shutdown = 2000, % timeout
-    Type = worker,
 
+    %% How do we supervise this?
     database:start(),
 
     Zonemaster = {"Zone master", {zonemaster, start_link, []},
 		  Restart, Shutdown, worker, [zonemaster]},
 
-    {ok, {SupFlags, [Zonemaster]}}.
+    ZoneSup = {"Zone Supervisor", {zone_sup, start_link, []},
+	       Restart, Shutdown, supervisor, [zone_sup]},
+
+    {ok, {SupFlags, [Zonemaster, ZoneSup]}}.
 
 %%%===================================================================
 %%% Internal functions
