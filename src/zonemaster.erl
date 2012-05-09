@@ -110,7 +110,7 @@ handle_call({get_zone, Id}, _From, ActiveZonesTree) ->
     case gb_trees:lookup(Id, ActiveZonesTree) of
 	none ->
 	    %% Spawn a new zone
-	    {ok, Zone} = zone:start_link(Id),
+	    {ok, Zone} = zone_sup:start_zone(Id),
 	    NewTree = gb_trees:insert(Id, Zone, ActiveZonesTree),
 	    
 	    {reply, Zone, NewTree};
@@ -143,6 +143,7 @@ handle_cast({zone_inactive, Id}, ActiveZonesTree) ->
 	    {noreply, ActiveZonesTree};
 	
 	{value, _} ->
+	    zone_sup:stop_zone(Id),
 	    NewTree = gb_trees:delete(Id,ActiveZonesTree),	    
 	    {noreply, NewTree}
     end;
