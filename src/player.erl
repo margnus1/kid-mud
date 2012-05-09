@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(player).
 -include("player.hrl").
+-include("zone.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
@@ -130,7 +131,8 @@ handle_cast({command, Command}, OldState = {Console, Zone, Player}) ->
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
 		{ok, Id} ->
-		    Console ! {message, "You successfully moved " ++ atom_to_list(Direction)},
+		    Console ! {message, "You successfully moved " ++ 
+				   atom_to_list(Direction)},
 		    
 		    NewZone = zonemaster:get_zone(Id),
 		    zone:enter(NewZone, self(), Player#player.name, Direction),
@@ -270,5 +272,23 @@ player_test_() ->
 	     ControlPlayer = NewPlayer#player{health = Player#player.health},
 	     ?assertEqual(Player, ControlPlayer)
      end, 
-     ?_assertEqual(handle_cast("test", state), {noreply, state})
+     ?_assertEqual(handle_cast("test", state), {noreply, state}),
+     ?_assertEqual(get_health(#player{name = "foo"}), 100),
+     fun () ->
+	     %% requires some of the other modules to work properly
+	     mnesia:start(),
+	     master_supervisor:start(),
+	     database:write_zone(#zone{id=0, exits=[{north, 1}]}),
+	     database:write_zone(#zone{id=1, exits=[{south, 0}]}),
+	     Player = #player{name = "foo"},
+	     Zone = zonemaster:get_zone(Player#player.location),
+	     zone:enter(Zone, self(), "foo", login),
+	     ?assertEqual(handle_cast({command, "go north"}, {self(), Zone, Player}),
+			  {noreply, {self(), zonemaster:get_zone(1), 
+				     #player{name="foo",location=1,
+					     health=Player#player.health}}}),
+	     fetch(),
+	     fetch(),
+	     ?assertEqual({message, "You successfully moved north"}, fetch())
+     end
     ].
