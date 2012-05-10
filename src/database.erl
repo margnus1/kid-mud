@@ -48,7 +48,7 @@ write_zone(Zone) ->
 
 
 %% @doc Starts the database
-%% @spec start() -> ok | {error, Reason}
+%% @spec init() -> ok | {error, Reason}
 init() ->
     create_tables([{disc_copies, [node()]}]),
     mnesia:wait_for_tables([player, zone], 2000),
