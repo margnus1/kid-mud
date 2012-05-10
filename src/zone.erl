@@ -267,7 +267,10 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 
     case lists:keyfind(Target, 2, Players) of	
 	{TargetPID, _} ->
-	    message_players(Players, message, io_lib:format("~s hits ~s for ~p", [Name, Target, Damage])),
+	    message_players(
+	      Players, message,
+	      io_lib:format("~s hits ~s for ~p",
+			    [Name, Target, Damage])),
 	    player:damage(TargetPID, Damage),
 	    {noreply, {Players, Data}};
 	false ->
@@ -348,19 +351,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-%% CURRENTLY UNUSED
-%% @doc Sends a message to all the players in the zone
-%%message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2, Arg3) ->
-%%    player:Notice(PlayerPID, Arg1, Arg2, Arg3), 
-%%    message_players(Rest, Notice, Arg1, Arg2, Arg3);
-%%message_players([], _, _, _, _) -> ok.
-
-%% @doc Sends a message to all the players in the zone
-%%message_players([{PlayerPID, _}|Rest], Notice, Arg1, Arg2) ->
-%%    player:Notice(PlayerPID, Arg1, Arg2),
-%%    message_players(Rest, Notice, Arg1, Arg2);
-%%message_players([], _, _, _) -> ok.
 
 %% @doc Sends a message to all the players in the zone
 message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
