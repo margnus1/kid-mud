@@ -214,6 +214,10 @@ test_setup() ->
     zone_sup:start_link(),
     ok.
 
+%% zonemaster_test_() will test following functions.
+%% Create a zone.
+%% Create a zone and add the player Tomas.
+%% Kick Tomas from the zone and tests if it becomes inactive. 
 zonemaster_test_() ->
     {setup, fun test_setup/0, 
      [?_assertEqual(get_zone(1234), get_zone(1234)),
@@ -230,8 +234,9 @@ zonemaster_test_() ->
 	      zonemaster:kick_player("Tomas"),
 
 	      ?_assertNotEqual(Test,database:read_player("Tomas")),
-	      %% Todo: Call the zone insted of just calling zonemaster to inactivate zone.
-	      zonemaster:zone_inactive(1234),
+	      %% The sleep is needed because it will take some time for zone to become inactive 
+	      %% when the only player in zone 1234 get kicked.
+	      timer:sleep(100),
 	      ?assert(TempId =/= get_zone(1234))
       end
      ]}.
