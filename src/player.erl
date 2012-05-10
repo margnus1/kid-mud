@@ -13,7 +13,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2, command/2, message/2, kick/1, damage/2]).
+-export([start_link/2, command/2, message/2, kick/1, damage/2, stop_attack/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -75,6 +75,22 @@ kick(Player) ->
 damage(Player, Damage) ->
     gen_server:cast(Player, {damage, Damage}).
 
+%%--------------------------------------------------------------------
+%% @doc
+%%
+%% @end
+%%--------------------------------------------------------------------
+attack(Player, Target) ->
+    gen_server:cast(Player, {attack, Target}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%
+%% @end
+%%--------------------------------------------------------------------
+stop_attack(Player, Target) ->
+    gen_server:cast(Player, {stop_attack, Target}).
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -95,7 +111,7 @@ init([Name, Console]) ->
     Zone = zonemaster:get_zone(Data#player.location),
     zone:enter(Zone, self(), Name, login),
     Console ! {message, "Welcome to Kid-MUD!"},
-    {ok, {Console, Zone, Data}}.
+    {ok, {Console, Zone, Data, {normal, none, none}}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -126,68 +142,105 @@ handle_call(Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({command, Command}, OldState = {Console, Zone, Data}) ->
+handle_cast({command, Command}, 
+	    State = {Console, Zone, Data, CombatState = {PlayerState, Target, AttackTimer}}) ->
     case parser:parse(Command) of
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
 		{ok, Id} ->
 		    Console ! {message, "You successfully moved " ++ 
 				   atom_to_list(Direction)},
-		    
+
 		    NewZone = zonemaster:get_zone(Id),
 		    zone:enter(NewZone, self(), Data#player.name, Direction),
-		    {noreply, {Console, NewZone, Data#player{location=Id}}};
+		    timer:cancel(AttackTimer),
+		    {noreply, {Console, NewZone, Data#player{location=Id}, {normal, none, none}}};
 
 		{error, doesnt_exist} ->
 		    Console ! {message, "You cannot go that way"},
-		    {noreply, OldState}
+		    {noreply, State}
 	    end;
 
 	{say, Message} ->
 	    zone:say(Zone, self(), Message),
-	    {noreply, OldState};
+	    {noreply, State};
 
 	logout ->
 	    zone:logout(Zone, self()),
-	    {stop, normal, OldState};
+	    {stop, normal, State};
 
 	exits ->
 	    zone:exits(Zone, self()),
-	    {noreply, OldState};
+	    {noreply, State};
 
 	look ->
 	    zone:look(Zone, self()),
-	    {noreply, OldState};
+	    {noreply, State};
 
-	{attack, Target} ->
-	    zone:attack(Zone, self(), Target, 10),
-	    {noreply, OldState};
+	stop ->
+	    Console ! {message , "You stopped all actions"},
+	    timer:cancel(AttackTimer),
+	    {noreply, {Console, Zone, Data, {normal, none, none}}};
+
+	{attack, NewTarget} ->
+	    if 
+		Target =:= NewTarget ->
+		    Console ! {message, ["You are already attacking ", Target]},
+		    {noreply, State};
+		Target =/= NewTarget ->
+		    case zone:validate_target(Zone, self(), NewTarget) of
+			no_target ->
+			    Console ! {message, ["Can't find any \"", NewTarget, "\" here"] },
+			    {noreply, State};
+			valid_target ->
+			    Console ! {message, ["You are now attacking ", NewTarget]},
+			    timer:cancel(AttackTimer),
+			    {_,NewAttackTimer} = timer:send_interval(2000, {'$gen_cast',{attack, NewTarget}}),
+			    {noreply, {Console, Zone, Data, {combat, NewTarget, NewAttackTimer}}}
+		    end
+	    end;
 
 	parse_error ->
 	    Console ! {message, "Command not recognized"},
-	    {noreply, OldState}
+	    {noreply, State}
     end;
 
-handle_cast({message, Description}, State={Console,_,_}) ->
+handle_cast({attack, NewTarget}, 
+	    {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
+    zone:attack(Zone, self(), NewTarget, 10),
+    {noreply, {Console, Zone, Data, {normal, Target, AttackTimer}}};
+
+handle_cast({stop_attack, ZoneTarget}, State =  
+		{Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
+    if 
+	ZoneTarget =:= Target ->
+	    Console ! {message, "You have stopped attacking"},
+	    timer:cancel(AttackTimer),
+	    {noreply, {Console, Zone, Data, {normal, none, none}}};
+	ZoneTarget =/= Target ->
+	    {noreply, State}    
+    end;
+
+handle_cast({message, Description}, State={Console,_,_,_}) ->
     Console ! {message, Description},
     {noreply, State};
 
 
-handle_cast(kick, State={Console,_,_}) ->
+handle_cast(kick, State={Console,_,_,_}) ->
     Console ! {message, "You have been kicked!"},
     {stop, normal, State};
 
-handle_cast({damage, Damage}, {Console, Zone, Data}) ->
+handle_cast({damage, Damage}, {Console, Zone, Data, CombatState}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
     {_, Health} = NewData#player.health,
     if 
 	Health > 0.0 ->					     
-	    {noreply, {Console, Zone, NewData}};
+	    {noreply, {Console, Zone, NewData, CombatState}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},
 	    zone:death(Zone, self()),
 	    %% Player dies permanently
-	    {stop, normal, {Console, Zone, #player{name = Data#player.name}}}
+	    {stop, normal, {Console, Zone, #player{name = Data#player.name}, CombatState}}
     end;
 
 handle_cast(Msg, State) ->
@@ -220,7 +273,7 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {_, _, Data}) ->
+terminate(_Reason, {_, _, Data,_}) ->
     database:write_player(Data),
     ok.
 
@@ -262,47 +315,48 @@ fetch() ->
 
 player_test_() ->
     {setup, fun test_setup/0, 
-    [
-     fun () ->		  
-	     ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever}),
-			  {noreply, {self(),what,ever}}),
-	     ?assertEqual(fetch(), {message, "foo"})
-     end,
-     fun () ->		  
-	     ?assertEqual(handle_cast(kick, {self(),what,ever}),
-			  {stop, normal, {self(),what,ever}}),
-	     ?assertEqual(fetch(), {message, "You have been kicked!"})
-     end,
-     fun () ->
-	     %% Test for handle_cast({damage, integer()}, {pid(),pid(),player()}
-	     Data = #player{name = "Pontus"},
-	     {noreply,{what,ever, NewData}} = 
-		 handle_cast({damage, 20}, {what,ever, Data}),
-	     ?assertEqual(round(element(2, NewData#player.health)), 80),
-	     ControlData = NewData#player{health = Data#player.health},
-	     ?assertEqual(Data, ControlData)
-     end, 
-     ?_assertEqual(handle_cast("test", state), {noreply, state}),
-     ?_assertEqual(get_health(#player{name = "foo"}), 100),
-     fun () ->
-	     %% requires some of the other modules to work properly
-	     %% Test for handle_cast({command, "go north"}, 
-	     %%                       {pid(),pid(),player()}
-	     mnesia:start(),
-	     application:start(kidmud),
-	     database:write_zone(#zone{id=0, exits=[{north, 1}]}),
-	     database:write_zone(#zone{id=1, exits=[{south, 0}]}),
-	     Data = #player{name = "foo"},
-	     Zone = zonemaster:get_zone(Data#player.location),
-	     zone:enter(Zone, self(), "foo", login),
-	     ?assertEqual(handle_cast({command, "go north"}, 
-				      {self(), Zone, Data}),
-			  {noreply, {self(), zonemaster:get_zone(1), 
-				     #player{name="foo",location=1,
-					     health=Data#player.health}}}),
-	     fetch(),
-	     fetch(),
-	     ?assertEqual({message, "You successfully moved north"}, fetch()),
-	     application:stop(kidmud)
-     end
-    ]}.
+     [
+      fun () ->		  
+	      ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever,ever}),
+			   {noreply, {self(),what,ever,ever}}),
+	      ?assertEqual(fetch(), {message, "foo"})
+      end,
+      fun () ->		  
+	      ?assertEqual(handle_cast(kick, {self(),what,ever,ever}),
+			   {stop, normal, {self(),what,ever,ever}}),
+	      ?assertEqual(fetch(), {message, "You have been kicked!"})
+      end,
+      fun () ->
+	      %% Test for handle_cast({damage, integer()}, {pid(),pid(),player()}
+	      Data = #player{name = "Pontus"},
+	      {noreply,{what,ever, NewData, ever}} = 
+		  handle_cast({damage, 20}, {what,ever, Data, ever}),
+	      ?assertEqual(round(element(2, NewData#player.health)), 80),
+	      ControlData = NewData#player{health = Data#player.health},
+	      ?assertEqual(Data, ControlData)
+      end, 
+      ?_assertEqual(handle_cast("test", state), {noreply, state}),
+      ?_assertEqual(get_health(#player{name = "foo"}), 100),
+      fun () ->
+	      %% requires some of the other modules to work properly
+	      %% Test for handle_cast({command, "go north"}, 
+	      %%                       {pid(),pid(),player()}
+	      mnesia:start(),
+	      application:start(kidmud),
+	      database:write_zone(#zone{id=0, exits=[{north, 1}]}),
+	      database:write_zone(#zone{id=1, exits=[{south, 0}]}),
+	      Data = #player{name = "foo"},
+	      Zone = zonemaster:get_zone(Data#player.location),
+	      zone:enter(Zone, self(), "foo", login),
+	      ?assertEqual(handle_cast({command, "go north"}, 
+				       {self(), Zone, Data, {normal,none,none}}),
+			   {noreply, {self(), zonemaster:get_zone(1), 
+				      #player{name="foo",location=1,
+					      health=Data#player.health},
+				      {normal,none,none}}}),
+	      fetch(),
+	      fetch(),
+	      ?assertEqual({message, "You successfully moved north"}, fetch()),
+	      application:stop(kidmud)
+      end
+     ]}.

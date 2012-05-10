@@ -19,6 +19,7 @@ parse(String) ->
 parse_test_() ->
     [?_assertEqual(parse_error        , parse("")),
      ?_assertEqual(logout             , parse("logout")),
+     ?_assertEqual(stop               , parse("stop")),
      ?_assertEqual(look               , parse("look")),
      ?_assertEqual(look               , parse("l")),
      ?_assertEqual(parse_error        , parse("lo")),
