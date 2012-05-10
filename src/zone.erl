@@ -406,8 +406,13 @@ format_arrival(login) -> " logged in".
 
 
 test_setup() ->
+    database_setup(),
     register(zonemaster, self()),
     ok.
+
+database_setup() ->
+    mnesia:start(),
+    database:create_tables([]).
 
 %% @hidden
 fetch() ->
