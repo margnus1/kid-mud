@@ -294,14 +294,13 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 
     case lists:keyfind(Target, 2, Players) of	
 	{TargetPID, _} ->
-	    player:combat_message(PlayerPID, ok_target, Target),
 
 	    message_players(
-	      Players, message,
-	      io_lib:format("~s hits ~s for ~p",
-			    [Name, Target, Damage])),
+	      Players, message, io_lib:format("~s hits ~s for ~p",
+					      [Name, Target, Damage])),
 	    player:damage(TargetPID, Damage),
 	    {noreply, {Players, Data}};
+
 	false ->
 	    player:stop_attack(PlayerPID, Target),
 	    {noreply, {Players, Data}} 
@@ -573,21 +572,22 @@ zone_attack_test_() ->
 	     handle_cast({attack, self(), "Kurt", 1}, {[{self(),"Kurt"}],
 						       #zone{id=5, exits=[]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message)),
-	     ?assertEqual({'$gen_cast', {damage, 1}},
-			  fetch())
+	     ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message))
      end,
 
+     ?_assertEqual({'$gen_cast', {damage, 1}},
+		   fetch()),
      fun () ->
-	     handle_cast({attack, self(), "Scurt", 1}, 
+	     handle_cast({attack, self(), "Scurt", 10}, 
 			 {[{self(),"Kurt"}], 
-			  #zone{id=2, exits=[{north,1},{south,2}]}}), 
-	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Can't find Scurt", lists:flatten(Message))
-     end].
+			  #zone{id=2, exits=[{north,1},{south,2}]}}),
+	     ?assertEqual({'$gen_cast', {stop_attack, "Scurt"}}, fetch())
+     end
+    ].
 
 zone_death_test_() ->
-    [?_assertEqual({noreply, {[], #zone{id=7, exits=[]}}},
+    [
+     ?_assertEqual({noreply, {[], #zone{id=7, exits=[]}}},
 		   handle_cast({death, self()}, {[{self(), "Arne"}],
 						 #zone{id=7, exits=[]}})),
 
@@ -599,7 +599,9 @@ zone_death_test_() ->
 				 #zone{id=5, exits=[]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("Kurt has been slain!", lists:flatten(Message))  
-     end].
+     end,
+
+?_assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())].
 
 zone_test_() ->
      [?_assertEqual(" arrives from south", format_arrival(north)),
