@@ -24,9 +24,9 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts the supervisor whithout a link.
+%% Starts the supervisor without a link.
 %% To be used from shell when debugging only.
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @spec start() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start() ->

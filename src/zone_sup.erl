@@ -37,7 +37,7 @@ start_link() ->
 %% @doc
 %% Starts the zone with id Id
 %%
-%% @spec start_zone(Id = integer()) -> pid() | {error, term()}
+%% @spec start_zone(Id) -> pid() | {error, term()}
 %% @end
 %%--------------------------------------------------------------------
 start_zone(Id) ->
@@ -53,7 +53,7 @@ start_zone(Id) ->
 %% @doc
 %% Stop the zone with id Id
 %%
-%% @spec start_zone(Id = integer()) -> pid() | {error, term()}
+%% @spec stop_zone(Id) -> ok | {error, term()}
 %% @end
 %%--------------------------------------------------------------------
 stop_zone(Id) ->
