@@ -5,7 +5,7 @@ say_command <- "say " .* `
 {say, unicode:characters_to_list(Letters)}
 `;
 
-attack_command <- "attack " .* `
+attack_command <- ("attack " / "kill ") .* `
 [_, Letters] = Node,
 {attack, unicode:characters_to_list(Letters)}
 `;

@@ -184,6 +184,7 @@ handle_call({go, PlayerPID, Direction}, _From, {Players, Data = #zone{id=Id, exi
 	    end
     end;
 
+
 handle_call(Request, _From, State) ->
     Reply = ok,
     io:fwrite("Unknown call to zone ~p: ~p~n", [self(), Request]),
@@ -325,9 +326,10 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {_, Data=#zone{id=Id}}) ->
+terminate(_Reason, {Players, Data=#zone{id=Id}}) ->
     %% @todo Inform players properly that the zone is shutting down
-    %%[player:kick(PlayerPID) || PlayerPID <- Players],
+
+    [player:kick(PlayerPID) || {PlayerPID,_} <- Players],
 
     database:write_zone(Data),
     ok.
@@ -428,66 +430,79 @@ fetch() ->
 zone_go_test_() ->
     {setup, fun test_setup/0, 
      [?_assertEqual({reply,{ok, 5}, {[{self(),"Arne"}],
-				     #zone{id=14, desc="A room!", exits=[{south,5}]}}},
+				     #zone{id=14, desc="A room!",
+					   exits=[{south,5}]}}},
 		    handle_call({go, self(), south}, self(), 
 				{[{self(),"Kalle"}, {self(),"Arne"}],
 				 #zone{id=14, desc="A room!", exits=[{south,5}]}})),
 
-      ?_assertEqual({'$gen_cast', {message, ["Kalle", " has left to the ", "south"]}}, fetch()),
+      ?_assertEqual({'$gen_cast', 
+		     {message, ["Kalle", " has left to the ", "south"]}}, fetch()),
 
-      ?_assertEqual({reply,{error,doesnt_exist}, {[],#zone{id=14, desc="A room!", exits=[]}}},
-		    handle_call({go, self(), south}, self(), {[],#zone{id=14, desc="A room!", exits=[]}})),
-
-      ?_assertEqual({reply,{ok, 9}, {[], #zone{id=12, desc="A room!", exits=[{south,9}]}}},
+      ?_assertEqual({reply,{error,doesnt_exist}, 
+		     {[],#zone{id=14, desc="A room!", exits=[]}}},
 		    handle_call({go, self(), south}, self(), 
-				{[{self(),"Arne"}], #zone{id=12, desc="A room!", exits=[{south,9}]}}))
-     ]}.
+				{[],#zone{id=14, desc="A room!", exits=[]}})),
 
+      ?_assertEqual({reply,{ok, 9}, {[], 
+				     #zone{id=12, desc="A room!",
+					   exits=[{south,9}]}}},
+		    handle_call({go, self(), south}, self(), 
+				{[{self(),"Arne"}], 
+				 #zone{id=12, desc="A room!", exits=[{south,9}]}}))
+     ]}.
 
 zone_say_test_() ->
     [?_assertEqual({'$gen_cast', {zone_inactive, 12}}, fetch()),
      ?_assertEqual({noreply, {[{self(),"Arne"}],[]}},
 		   handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]})),
-     ?_assertEqual({'$gen_cast', {message, ["Arne", " says \"", "Message", "\""]}}, fetch())].
+     ?_assertEqual({'$gen_cast', 
+		    {message, ["Arne", " says \"", "Message", "\""]}}, fetch())].
 
 zone_exits_test_() ->
     fun () -> handle_cast({exits, self()}, {[], #zone{id=12, exits=[{north,1}]}}),
-	      ?assertEqual({'$gen_cast', {message, ["There is an exit to the ", "north"]}}, 
+	      ?assertEqual({'$gen_cast',
+			    {message, ["There is an exit to the ", "north"]}}, 
 			   fetch())
     end.
 
 zone_enter_test_() ->
-      [?_assertEqual({noreply, {[{self(), "Gunde"}], #zone{id=14, desc="A room!", exits=[]}}},
-		    handle_cast({enter, self(), "Gunde", south}, 
-				{[], #zone{id=14, desc="A room!", exits=[]}})),
-      fun () ->
-	      {'$gen_cast', {message, Message}} = fetch(),
-	      ?assertEqual("A room!", lists:flatten(Message)),
-	      fetch() % exits, already tested
-      end].
+    [?_assertEqual({noreply, {[{self(), "Gunde"}], 
+			      #zone{id=14, desc="A room!", exits=[]}}},
+		   handle_cast({enter, self(), "Gunde", south}, 
+			       {[], #zone{id=14, desc="A room!", exits=[]}})),
+     fun () ->
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("A room!", lists:flatten(Message)),
+	     fetch() % exits, already tested
+     end].
 
 zone_look_test_() ->
-     [fun () ->
-	      handle_cast({look, self()}, {[], #zone{id=14, desc="A room"}}),
-	      {'$gen_cast', {message, Message}} = fetch(),
-	      ?assertEqual("A room", lists:flatten(Message))
-      end,
-      ?_assertEqual({'$gen_cast', {message, "You see no exit"}}, fetch()),
-      fun () ->
-	      handle_cast({look, self()}, {[{0, "B"}], #zone{id=14, desc="A small room", 
-							     exits=[{north, -1}]}}),
-	      {'$gen_cast', {message, Message}} = fetch(),
-	      ?assertEqual("A small room\nHere stands B", lists:flatten(Message))
-      end,
-      ?_assertEqual({'$gen_cast', {message, ["There is an exit to the ", "north"]}}, fetch()),
+    [fun () ->
+	     handle_cast({look, self()}, {[], #zone{id=14, desc="A room"}}),
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("A room", lists:flatten(Message))
+     end,
+     ?_assertEqual({'$gen_cast', {message, "You see no exit"}}, fetch()),
+     fun () ->
+	     handle_cast({look, self()}, {[{0, "B"}], 
+					  #zone{id=14, desc="A small room", 
+						exits=[{north, -1}]}}),
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("A small room\nHere stands B", lists:flatten(Message))
+     end,
+     ?_assertEqual({'$gen_cast', 
+		    {message, ["There is an exit to the ", "north"]}}, fetch()),
 
-   fun () ->
-	      handle_cast({look, self()}, {[{0, "B"}], #zone{id=14, desc="A room", 
-							     exits=[{north, -1},{south, 3}]}}),
-	      {'$gen_cast', {message, Message}} = fetch(),
-	      ?assertEqual("A room\nHere stands B", lists:flatten(Message))
-      end,
-      ?_assertEqual({'$gen_cast', {message, ["There are exits to ", "north, south"]}}, fetch())].
+     fun () ->
+	     handle_cast({look, self()}, {[{0, "B"}], 
+					  #zone{id=14, desc="A room",
+						exits=[{north, -1},{south, 3}]}}),
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("A room\nHere stands B", lists:flatten(Message))
+     end,
+     ?_assertEqual({'$gen_cast', 
+		    {message, ["There are exits to ", "north, south"]}}, fetch())].
 
 zone_logout_test_() ->
     [fun () -> handle_cast({logout, 3}, {[{3,"C"},{self(),"B"}], 
@@ -496,13 +511,15 @@ zone_logout_test_() ->
 			    fetch())
      end,
 
-     fun () -> handle_cast({logout, 3}, {[{3,"C"},{self(),"B"}], #zone{id=12, exits=[{north,1}]}}),
+     fun () -> handle_cast({logout, 3}, {[{3,"C"},{self(),"B"}], 
+					 #zone{id=12, exits=[{north,1}]}}),
 	       ?assertEqual({'$gen_cast', {message, ["C", " has logged out"]}},
 			    fetch())
      end,
 
      ?_assertEqual({noreply, {[], #zone{id=8, exits=[]}}},
-		   handle_cast({logout, self()}, {[{self(), "Arne"}],#zone{id=8, exits=[]}})),
+		   handle_cast({logout, self()}, {[{self(), "Arne"}],
+						  #zone{id=8, exits=[]}})),
 
      ?_assertEqual({'$gen_cast', {zone_inactive, 8}},
 		   fetch())
@@ -514,36 +531,38 @@ zone_kick_test_() ->
 
 	       ?assertEqual({'$gen_cast', kick},
 			    fetch()),
-	       ?assertEqual({'$gen_cast', {message, ["Timmy", " has logged out"]}},fetch())
-
-	       %%?assertEqual({'$gen_cast', {message, {zone_inactive, 8}}},
-		%%	    fetch())
+	       ?assertEqual({'$gen_cast', 
+			     {message, ["Timmy", " has logged out"]}},fetch())
      end].
 
 zone_attack_test_() ->
-      [fun () ->
-	      handle_cast({attack, self(), "Kurt", 1}, {[{self(),"Kurt"}], #zone{id=5, exits=[]}}),
-	      {'$gen_cast', {message, Message}} = fetch(),
-	      ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message)),
-	      ?assertEqual({'$gen_cast', {damage, 1}},
-			   fetch())
-      end,
+    [fun () ->
+	     handle_cast({attack, self(), "Kurt", 1}, {[{self(),"Kurt"}],
+						       #zone{id=5, exits=[]}}),
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message)),
+	     ?assertEqual({'$gen_cast', {damage, 1}},
+			  fetch())
+     end,
 
-      fun () ->
-	      handle_cast({attack, self(), "Scurt", 1}, {[{self(),"Kurt"}],
-							 #zone{id=2, exits=[{north,1},{south,2}]}}),
-	      {'$gen_cast', {message, Message}} = fetch(),
-	      ?assertEqual("Can't find Scurt", lists:flatten(Message))
-      end].
+     fun () ->
+	     handle_cast({attack, self(), "Scurt", 1}, 
+			 {[{self(),"Kurt"}], 
+			  #zone{id=2, exits=[{north,1},{south,2}]}}), 
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("Can't find Scurt", lists:flatten(Message))
+     end].
 
 zone_death_test_() ->
     [?_assertEqual({noreply, {[], #zone{id=7, exits=[]}}},
-		   handle_cast({death, self()}, {[{self(), "Arne"}],#zone{id=7, exits=[]}})),
+		   handle_cast({death, self()}, {[{self(), "Arne"}],
+						 #zone{id=7, exits=[]}})),
 
      ?_assertEqual({'$gen_cast', {zone_inactive, 7}}, fetch()),
 
      fun () ->
-	     handle_cast({death, self()}, {[{self(),"Kurt"}, {self(),"Allan"}], #zone{id=5, exits=[]}}),
+	     handle_cast({death, self()}, {[{self(),"Kurt"}, {self(),"Allan"}], 
+					   #zone{id=5, exits=[]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("Kurt has been slain!", lists:flatten(Message))  
      end].
