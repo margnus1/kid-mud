@@ -1,4 +1,4 @@
-command <- logout_command / exits_command / attack_command / say_command / look_command / move_command ;
+command <- logout_command / exits_command / attack_command / say_command / stop_command / look_command / move_command ;
 
 say_command <- "say " .* `
 [_, Letters] = Node,
@@ -15,6 +15,8 @@ exits_command <- "exits" `exits`;
 look_command <- "look" / "l" `look`;
 
 logout_command <- "logout" `logout`;
+
+stop_command <- "stop" `stop`;
 
 move_command <- move direction `list_to_tuple(Node)`;
 move <- "go " / "move " / "" `go`;

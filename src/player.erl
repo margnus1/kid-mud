@@ -177,6 +177,11 @@ handle_cast({command, Command},
 	    zone:look(Zone, self()),
 	    {noreply, State};
 
+	stop ->
+	    Console ! {message , "You stopped all actions"},
+	    timer:cancel(AttackTimer),
+	    {noreply, {Console, Zone, Data, {normal, none, none}}};
+
 	{attack, NewTarget} ->
 	    if 
 		Target =:= NewTarget ->
@@ -190,10 +195,10 @@ handle_cast({command, Command},
 			valid_target ->
 			    Console ! {message, ["You are now attacking ", NewTarget]},
 			    timer:cancel(AttackTimer),
-			    NewAttackTimer = timer:send_interval(2000, {'$gen_cast',{attack, NewTarget}}),
+			    {_,NewAttackTimer} = timer:send_interval(2000, {'$gen_cast',{attack, NewTarget}}),
 			    {noreply, {Console, Zone, Data, {combat, NewTarget, NewAttackTimer}}}
 		    end
-		end;
+	    end;
 
 	parse_error ->
 	    Console ! {message, "Command not recognized"},
@@ -206,7 +211,7 @@ handle_cast({attack, NewTarget},
     {noreply, {Console, Zone, Data, {normal, Target, AttackTimer}}};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
-	    {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
+		{Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
     if 
 	ZoneTarget =:= Target ->
 	    Console ! {message, "You have stopped attacking"},

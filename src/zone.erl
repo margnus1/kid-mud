@@ -47,7 +47,7 @@ go(Zone, PlayerPID, Direction) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a '' command from a Player
+%% Receive a 'validate_target' command from a Player
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -194,22 +194,19 @@ handle_call({go, PlayerPID, Direction},
 	    end
     end;
 
+
 handle_call({validate_target, PlayerPID, Target},
 	    _From, {Players, Data = #zone{id=Id, exits=Exits}}) ->
 
-    %% @todo add help function
+    %% @todo make help function
 
     case lists:keyfind(Target, 2, Players) of	
 	{TargetPID, _} ->
 	    {reply, valid_target, {Players, Data}};
 	false ->
 	    {reply, no_target, {Players, Data}}
-
     end;
 
-
-
-%%{reply, {ok, DirectionID}, {UpdatedPlayers, Data}}.
 
 handle_call(Request, _From, State) ->
     Reply = ok,
@@ -319,7 +316,6 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	    message_players(UpdatedPlayers, message, 
 			    [Name, " has been slain!"]),
 
-	    %%player:combat_message(PlayerPID, no_target, Target),
 	    message_players(Players, stop_attack, Name),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
@@ -478,6 +474,31 @@ zone_go_test_() ->
 		      {[{self(),"Arne"}], 
 		       #zone{id=12, desc="A room!", exits=[{south,9}]}}))
      ]}.
+
+zone_validate_target_test_() ->
+    [?_assertEqual({reply,valid_target, 
+		    {[{self(),"Kalle"},{self(),"Arne"}],
+		     #zone{id=14, desc="A room!",
+			   exits=[{south,5}]}}},
+		   handle_call(
+		     {validate_target, self(), "Kalle"}, self(), 
+		     {[{self(),"Kalle"}, {self(),"Arne"}],
+		      #zone{id=14, desc="A room!", exits=[{south,5}]}})),
+
+     ?_assertEqual({reply,no_target, 
+		    {[{self(),"Kalle"}],
+		     #zone{id=14, desc="A room",
+			   exits=[{south,5}]}}},
+		   handle_call(
+		     {validate_target, self(), "Arne"}, self(), 
+		     {[{self(),"Kalle"}],
+		      #zone{id=14, desc="A room", exits=[{south,5}]}})),
+
+     ?_assertEqual({reply,no_target, 
+		    {[],#zone{id=14, desc="A", exits=[]}}},
+		   handle_call(
+		     {validate_target, self(), "Arne"}, self(), 
+		     {[],#zone{id=14, desc="A", exits=[]}}))].
 
 zone_say_test_() ->
     [?_assertEqual({'$gen_cast', {zone_inactive, 12}}, fetch()),
