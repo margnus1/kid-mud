@@ -1,0 +1,27 @@
+@author Eric Arnerlöv <eric.arnerlov.4839@student.uu.se>
+@author Michael Bergroth <michael.bergroth.5739@student.uu.se>
+@author Magnus Lång <magnus.lang.7837@student.uu.se>
+@author Mikael Wiberg <mikael.wiberg.6269@studnet.uu.se>
+@version Milestone 2
+@title Kid-MUD
+
+@doc 
+A MUD (Multi User Dungeon) is a text- based online game where players 
+perform actions by typing them (such as “go north” or “attack goblin”). 
+The world is partitioned into zones, and each player exists in one zone 
+at any one time, and can move to neighboring zones. Zones can be occupied 
+by several players as well as one or more NPC (Non player characters) that 
+can be interacted with (e.g. attacked).
+
+ <dl> 	  
+   <dt><strong><span class="code">src</span></strong></dt> 
+      <dd>Erlang source code.</dd> 
+   <dt><strong><span class="code">ebin</span></strong></dt> 
+      <dd>Erlang object code, the <span class="code">beam</span> files.</dd>
+   <dt><strong><span class="code">include</span></strong></dt> 
+      <dd>Erlang include files (.hrl files).</dd> 
+  <dt><strong><span class="code">doc</span></strong></dt> 
+      <dd>Documentation.</dd> 
+ </dl> 
+
+
