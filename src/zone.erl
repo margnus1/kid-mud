@@ -12,8 +12,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1, go/3, look/2, enter/4, logout/2, exits/2,
-	 kick/2, death/2, attack/4, say/3]).
+-export([start_link/1, go/3, validate_target/3, look/2, enter/4, logout/2,
+	 exits/2,  kick/2, death/2, attack/4, say/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -44,6 +44,15 @@ start_link(Id) ->
 %%--------------------------------------------------------------------
 go(Zone, PlayerPID, Direction) ->
     gen_server:call(Zone, {go, PlayerPID, Direction}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receive a '' command from a Player
+%%
+%% @end
+%%--------------------------------------------------------------------
+validate_target(Zone, PlayerPID, Target) ->
+    gen_server:call(Zone, {validate_target, PlayerPID, Target}).
 
 
 %%--------------------------------------------------------------------
@@ -185,6 +194,22 @@ handle_call({go, PlayerPID, Direction},
 	    end
     end;
 
+handle_call({validate_target, PlayerPID, Target},
+	    _From, {Players, Data = #zone{id=Id, exits=Exits}}) ->
+
+    %% @todo add help function
+
+    case lists:keyfind(Target, 2, Players) of	
+	{TargetPID, _} ->
+	    {reply, valid_target, {Players, Data}};
+	false ->
+	    {reply, no_target, {Players, Data}}
+
+    end;
+
+
+
+%%{reply, {ok, DirectionID}, {UpdatedPlayers, Data}}.
 
 handle_call(Request, _From, State) ->
     Reply = ok,
@@ -269,6 +294,8 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 
     case lists:keyfind(Target, 2, Players) of	
 	{TargetPID, _} ->
+	    player:combat_message(PlayerPID, ok_target, Target),
+
 	    message_players(
 	      Players, message,
 	      io_lib:format("~s hits ~s for ~p",
@@ -276,7 +303,7 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 	    player:damage(TargetPID, Damage),
 	    {noreply, {Players, Data}};
 	false ->
-	    player:message(PlayerPID, ["Can't find ", Target]),
+	    player:stop_attack(PlayerPID, Target),
 	    {noreply, {Players, Data}} 
     end;
 
@@ -292,6 +319,9 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	UpdatedPlayers ->
 	    message_players(UpdatedPlayers, message, 
 			    [Name, " has been slain!"]),
+
+	    %%player:combat_message(PlayerPID, no_target, Target),
+	    message_players(Players, stop_attack, Name),
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
