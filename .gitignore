@@ -3,4 +3,5 @@ src/parser_grammar.erl
 */.DS_Store
 .DS_Store
 doc/html/*
+!doc/html/overview.edoc
 database
