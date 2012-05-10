@@ -407,8 +407,13 @@ format_arrival(login) -> " logged in".
 test_setup() ->
     %%{ok, Testzone1} = start_link(1234),
     %%{ok, Testzone2} = start_link(1235),
+    database_setup(),
     register(zonemaster, self()),
     ok.
+
+database_setup() ->
+    mnesia:start(),
+    database:create_tables([]).
 
 %% @hidden
 fetch() ->

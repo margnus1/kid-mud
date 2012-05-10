@@ -1,0 +1,9 @@
+0,0	You are at spawn (0,0)
+0,1	You have gone north
+0,-1	You have gone south
+1,0	You have gone east
+-1,0	You have gone west
+-1,-1	You have gone southwest
+1,1	You have gone northeast
+1,-1	You have gone southeast
+-1,1	You have gone northwest

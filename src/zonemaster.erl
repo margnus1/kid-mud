@@ -139,7 +139,7 @@ handle_call(Request, _From, State) ->
 handle_cast({zone_inactive, Id}, ActiveZonesTree) ->
     case gb_trees:lookup(Id, ActiveZonesTree) of
 	none ->
-	    io:fwrite("Zonemaster: Got zone_inactive with an id ~p that is not active!", [Id]),
+	    %%io:fwrite("Zonemaster: Got zone_inactive with an id ~p that is not active!", [Id]),
 	    {noreply, ActiveZonesTree};
 	
 	{value, _} ->

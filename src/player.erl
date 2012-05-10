@@ -249,10 +249,9 @@ get_health(#player{health={Time, Health}}) ->
 %%%===================================================================
 
 
-%%test_setup() ->
-%%    mnesia:start(),
-%%    database:create_tables([]),
-%%    ok.
+test_setup() ->
+    mnesia:start(),
+    database:create_tables([]).
 
 %% @hidden
 fetch() ->
@@ -262,6 +261,7 @@ fetch() ->
     end.
 
 player_test_() ->
+    {setup, fun test_setup/0, 
     [
      fun () ->		  
 	     ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever}),
@@ -289,7 +289,7 @@ player_test_() ->
 	     %% Test for handle_cast({command, "go north"}, 
 	     %%                       {pid(),pid(),player()}
 	     mnesia:start(),
-	     master_supervisor:start(),
+	     application:start(kidmud),
 	     database:write_zone(#zone{id=0, exits=[{north, 1}]}),
 	     database:write_zone(#zone{id=1, exits=[{south, 0}]}),
 	     Data = #player{name = "foo"},
@@ -302,6 +302,7 @@ player_test_() ->
 					     health=Data#player.health}}}),
 	     fetch(),
 	     fetch(),
-	     ?assertEqual({message, "You successfully moved north"}, fetch())
+	     ?assertEqual({message, "You successfully moved north"}, fetch()),
+	     application:stop(kidmud)
      end
-    ].
+    ]}.
