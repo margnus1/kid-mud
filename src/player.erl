@@ -153,7 +153,8 @@ handle_cast({command, Command},
 
 		    NewZone = zonemaster:get_zone(Id),
 		    zone:enter(NewZone, self(), Data#player.name, Direction),
-		    {noreply, {Console, NewZone, Data#player{location=Id}, CombatState}};
+		    timer:cancel(AttackTimer),
+		    {noreply, {Console, NewZone, Data#player{location=Id}, {normal, none, none}}};
 
 		{error, doesnt_exist} ->
 		    Console ! {message, "You cannot go that way"},
@@ -210,7 +211,7 @@ handle_cast({stop_attack, ZoneTarget}, State =
 	ZoneTarget =:= Target ->
 	    Console ! {message, "You have stopped attacking"},
 	    timer:cancel(AttackTimer),
-	    {noreply, {Console, Zone, Data, {normal, Target, AttackTimer}}};
+	    {noreply, {Console, Zone, Data, {normal, none, none}}};
 	ZoneTarget =/= Target ->
 	    {noreply, State}    
     end;
