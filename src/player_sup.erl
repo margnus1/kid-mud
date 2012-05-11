@@ -38,9 +38,9 @@ start_link() ->
 %% @doc
 %% Starts the player with name Name 
 %%
-%% @spec start_zone(Id) -> pid() | {error, term()}
 %% @end
 %%--------------------------------------------------------------------
+-spec start_player(string(), pid()) -> pid() | {error, term()}.
 start_player(Name, Console) ->
     Child = {{player, Name}, {player, start_link,[Name, Console]}, permanent,
 	     2000, worker, [player]},
@@ -54,9 +54,9 @@ start_player(Name, Console) ->
 %% @doc
 %% Stop the player with name Name
 %%
-%% @spec stop_zone(Id) -> ok | {error, term()}
 %% @end
 %%--------------------------------------------------------------------
+-spec stop_player(string()) -> ok | {error, term()}.
 stop_player(Name) ->
     supervisor:terminate_child(?SERVER, {player, Name}),
     supervisor:delete_child(?SERVER, {player, Name}).
