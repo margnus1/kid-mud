@@ -1,22 +1,20 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg and Michael Bergroth
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
-%%% @author Eric Arnerlöv
+%%% @author Michael Bergroth
 %%% @doc
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(zonemaster).
+-module(playermaster).
 
 -include_lib("eunit/include/eunit.hrl").
--include("zone.hrl").
--include("player.hrl").
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start/0, get_zone/1, zone_inactive/1,kick_player/1]).
+-export([start_link/0, start/0, start_player/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -30,29 +28,12 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%%      Gets the pid of the zone in question
+%%
 %% @end
 %%--------------------------------------------------------------------
-get_zone(Id) ->
-    gen_server:call(?SERVER, {get_zone, Id}).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%      Call every zone to kick a player by the player Name.
-%% @end
-%%--------------------------------------------------------------------
-kick_player(Name) ->
-    gen_server:cast(?SERVER, {kick_player, Name}).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%     Message that a zone is going inactive
-%% @end
-%%--------------------------------------------------------------------
-zone_inactive(Id) ->
-    gen_server:cast(?SERVER, {zone_inactive, Id}).
-
+start_player(Name, Console) ->
+    gen_server:call(?SERVER, {start_player, Name, Console}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -93,7 +74,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
     process_flag(trap_exit, true),
-    {ok, gb_trees:empty()}.
+    {ok, []}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -109,23 +90,19 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({get_zone, Id}, _From, ActiveZonesTree) ->
-    case gb_trees:lookup(Id, ActiveZonesTree) of
-	none ->
-	    %% Spawn a new zone
-	    Zone = zone_sup:start_zone(Id),
-	    NewTree = gb_trees:insert(Id, Zone, ActiveZonesTree),
-	    
-	    {reply, Zone, NewTree};
-	
-	{value, Zone} ->
-	    {reply, Zone, ActiveZonesTree}
+
+handle_call({start_player, Name, Console}, _From, PlayerList) ->
+    case lists:keyfind(Name,2,PlayerList) of
+	{_, _} ->
+	    {reply, login_failed, PlayerList};
+	false ->
+	    %% This case shouldnt happen
+	    PlayerPID = player_sup:start_player(Name, Console),
+	    {reply, {ok, PlayerPID}, PlayerList}
     end;
 
-
-
 handle_call(Request, _From, State) ->
-    io:fwrite("Unknown call to zonemaster: ~p~n", [Request]),
+    io:fwrite("Unknown call to playermaster: ~p~n", [Request]),
     {reply, ok, State}.
 
 
@@ -139,25 +116,9 @@ handle_call(Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({zone_inactive, Id}, ActiveZonesTree) ->
-    case gb_trees:lookup(Id, ActiveZonesTree) of
-	none ->
-	    %%io:fwrite("Zonemaster: Got zone_inactive with an id ~p that is not active!", [Id]),
-	    {noreply, ActiveZonesTree};
-	
-	{value, _} ->
-	    zone_sup:stop_zone(Id),
-	    NewTree = gb_trees:delete(Id,ActiveZonesTree),	    
-	    {noreply, NewTree}
-    end;
 
-handle_cast({kick_player,Name},ActiveZonesTree)->
-    ZoneLists = gb_trees:values(ActiveZonesTree),
-    lists:foreach(fun(H)-> zone:kick(H,Name) end, ZoneLists),
-    {noreply, ActiveZonesTree};
-	
 handle_cast(Msg, State) ->
-    io:fwrite("Unknown cast to zonemaster: ~p~n", [Msg]),
+    io:fwrite("Unknown cast to playermaster: ~p~n", [Msg]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -171,7 +132,7 @@ handle_cast(Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(Info, State) ->
-    io:fwrite("Unknown info to zonemaster: ~p~n", [Info]),
+    io:fwrite("Unknown info to playermaster: ~p~n", [Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -208,38 +169,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% EUnit tests
 %%%===================================================================
-
-test_setup() ->
-    mnesia:start(),
-    database:write_zone(#zone{id=1234}),    
-    database:write_zone(#zone{id=1235}),
-    start_link(),
-    zone_sup:start_link(),
-    ok.
-
-%% zonemaster_test_() will test following functions.
-%% Create a zone.
-%% Create a zone and add the player Tomas.
-%% Kick Tomas from the zone and tests if it becomes inactive. 
-zonemaster_test_() ->
-    {setup, fun test_setup/0, 
-     [?_assertEqual(get_zone(1234), get_zone(1234)),
-      ?_assertNotEqual(get_zone(1234), get_zone(1235)),
-      fun () ->
-	      %% Creates a zone and a player named "Tomas".
-	      %% Tests if "Tomas" were created and then if "Tomas" were kicked.
-	      TempId = get_zone(1234),
-	      database:write_player(#player{name="Tomas", location=1234}),
-	      player:start_link("Tomas", self()),
-	      Test = (#player{name="Tomas", location=1234}),
-
-	      ?_assertEqual(Test,database:read_player("Tomas")),
-	      zonemaster:kick_player("Tomas"),
-
-	      ?_assertNotEqual(Test,database:read_player("Tomas")),
-	      %% The sleep is needed because it will take some time for zone to become inactive 
-	      %% when the only player in zone 1234 get kicked.
-	      timer:sleep(100),
-	      ?assert(TempId =/= get_zone(1234))
-      end
-     ]}.
