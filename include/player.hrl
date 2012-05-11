@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %% @type player() = #player {name=string(), location=integer(), health={time=erlang=timestamp(), hp=integer()}}

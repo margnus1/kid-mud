@@ -1,13 +1,12 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
 %%% @author Magnus Lang <mala7837@fries.it.uu.se>
-%%% @copyright (C) 2012, Magnus Lang
 %%% @doc
 %%%
 %%% @end
-%%% Created :  8 May 2012 by Magnus Lang <mala7837@fries.it.uu.se>
+%%% Created :  8 May 2012 by Magnus Lång <mala7837@fries.it.uu.se>
 %%%-------------------------------------------------------------------
 -module(zone).
 -include("zone.hrl").

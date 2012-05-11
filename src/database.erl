@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
 %% See the file license.txt for copying permission.
 
 -module(database).
@@ -77,8 +77,8 @@ create_table(Table, Options, Attributes) ->
 	{atomic, ok} -> ok;
 	{aborted, {already_exists, Table}} ->
 	    case mnesia:table_info(Table, attributes) of
-		Attributes -> ok;
-		_BadAttributes ->
+		GoodAtts when GoodAtts =:= Attributes -> ok;
+		_BadAtts ->
 		    {atomic, ok} = mnesia:delete_table(Table),
 		    case mnesia:create_table(
 			   Table, [{attributes, Attributes}] ++ Options) of
