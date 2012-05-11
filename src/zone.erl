@@ -40,99 +40,122 @@ start_link(Id) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'go' command from a Player
+%% Looks if the direction is an valid exit.
+%% If the exit is invalid, tell the player that he cannot move that way.
+%% Otherwise return the exits ID and remove the player from the zone. 
 %%
 %% @end
 %%--------------------------------------------------------------------
+-spec go(pid(), pid(),
+	 north | south | east | west | login) -> ok.
 go(Zone, PlayerPID, Direction) ->
     gen_server:call(Zone, {go, PlayerPID, Direction}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'validate_target' command from a Player
+%% Checks if Target is a valid target in the zone.
 %%
 %% @end
 %%--------------------------------------------------------------------
+-spec validate_target(pid(), pid(), string()) -> ok.
 validate_target(Zone, PlayerPID, Target) ->
     gen_server:call(Zone, {validate_target, PlayerPID, Target}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'look' command from a Player
+%% Return the look information of the zone to the player.
 %% 
 %% @end
 %%--------------------------------------------------------------------
+-spec look(pid(), pid()) -> ok.
 look(Zone, PlayerPID) ->
     gen_server:cast(Zone, {look, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'enter' command from a Player
+%% Add the player to the zones player list and send the information 
+%% of the zone to the player.
+%% Inform the other players in the zone of this change.
 %% 
 %% @end
 %%--------------------------------------------------------------------
+-spec enter(pid(), pid(), string(), 
+	    north | south | east | west | login) -> ok.
 enter(Zone, PlayerPID, Name, Direction) ->
     gen_server:cast(Zone, {enter, PlayerPID, Name, Direction}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'logout' command from a Player
-%% 
+%% Remove the player from the zone. 
+%% If that was the last player in the zone the zone will shutdown, 
+%% otherwise inform the other players in the zone of this change.
 %% @end
 %%--------------------------------------------------------------------
+-spec logout(pid(), pid()) ->  ok.
 logout(Zone, PlayerPID) ->
     gen_server:cast(Zone, {logout, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'exits' command from a Player
+%% Return the exits of the zone to the player.
 %% 
 %% @end
 %%--------------------------------------------------------------------
+-spec exits(pid(), pid()) -> ok.
 exits(Zone, PlayerPID) ->
     gen_server:cast(Zone, {exits, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'kick' command from zonemaster
-%% 
+%% Remove the player from the zone and send a kick message to that player.
+%% If that was the last player in the zone the zone will shutdown, 
+%% otherwise inform the other players in the zone of this change.
+%%
 %% @end
 %%--------------------------------------------------------------------
+-spec kick(pid(), string()) -> ok.
 kick(Zone, Name) ->
     gen_server:cast(Zone, {kick, Name}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'attack' command from a Player
+%% If Target is a valid target make an attack on it, 
+%% otherwise tell player to stop attacking that Target.
+%% Inform the target of this attack.
+%% Inform all the players in the zone of this attack.
 %% 
 %% @end
 %%--------------------------------------------------------------------
+-spec attack(pid(), pid(), string(), integer()) -> ok.
 attack(Zone, PlayerPID, Target, Damage) ->
 	gen_server:cast(Zone, {attack, PlayerPID, Target, Damage}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'death' command from a Player
-%% 
+%% Remove the player from the zone.
+%% If that was the last player in the zone the zone will shutdown, 
+%% otherwise inform the other players in the zone of this change.
 %% @end
 %%--------------------------------------------------------------------
+-spec death(pid(), pid()) -> ok.
 death(Zone, PlayerPID) ->
     gen_server:cast(Zone, {death, PlayerPID}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive a 'say' command from a Player
+%% Broadcasts the say Message to all the players in the zone.
 %% 
 %% @end
 %%--------------------------------------------------------------------
+-spec say(pid(), pid(), string()) -> ok.
 say(Zone, PlayerPID, Message) ->
     gen_server:cast(Zone, {say, PlayerPID, Message}).
 
@@ -292,12 +315,13 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
     %% @todo Add NPC combat
 
     case lists:keyfind(Target, 2, Players) of	
-	{TargetPID, _} ->
+	{TargetPID, TargetName} ->
 
 	    message_players(
-	      Players, message, io_lib:format("~s hits ~s for ~p",
+	      lists:delete({TargetPID,TargetName}, Players),
+	      message, io_lib:format("~s hits ~s for ~p",
 					      [Name, Target, Damage])),
-	    player:damage(TargetPID, Damage),
+	    player:damage(TargetPID, Damage, Name),
 	    {noreply, {Players, Data}};
 
 	false ->
