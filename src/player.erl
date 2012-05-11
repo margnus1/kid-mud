@@ -238,7 +238,7 @@ handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
     {_, Health} = NewData#player.health,
     if 
 	Health > 0.0 ->
-	    Console ! {[Attacker ," hits YOU for damage: ", Damage]},
+	    Console ! {message, [Attacker ," hits YOU for damage: ", integer_to_list(Damage)]},
 	    {noreply, {Console, Zone, NewData, CombatState}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},
@@ -327,20 +327,22 @@ player_test_() ->
       fun () ->		  
 	      ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever,ever}),
 			   {noreply, {self(),what,ever,ever}}),
-	      ?assertEqual({message, "foo"}, fetch())
+	      ?assertEqual({message, "foo"}, fetch()),
+	      flush()
       end,
-      %%fun () ->		  
-%%	      ?assertEqual(handle_cast(kick, {self(),what,ever,ever}),
-%%			   {noreply, {self(),what,ever,ever}}),
-%%	      ?assertEqual(fetch(), {message, "You have been kicked!"})
- %%     end,
       fun () ->
-	      %% Test for handle_cast({damage, integer()}, {pid(),pid(),player()}
+	      Data = #player{name = "gunnar"},
+ 	      ?assertEqual(handle_cast(kick, {self(),what,Data,ever}),
+ 			   {noreply, {self(),what,Data,ever}}),
+ 	      ?assertEqual(fetch(), {message, "You have been kicked!"}),
+	      flush()
+      end,
+      fun () ->
+	      %% Test for handle_cast({damage, integer(), string()}, {pid(),pid(),player()}
 	      Data = #player{name = "Pontus"},
-	      {noreply,{what,ever, NewData, ever}} = 
-		  handle_cast({damage, 20, "hanna"}, {what,ever, Data, ever}),
+	      NewData = element(3, element(2, handle_cast({damage, 20, "hanna"}, {self(), self(), Data, ever}))),
 	      ?assertEqual(round(element(2, NewData#player.health)), 80),
-%%	      ?assertEqual({message, "hanna hits YOU for damage: 20"}, fetch()),
+	      ?assertEqual({message, ["hanna"," hits YOU for damage: ","20"]}, fetch()),
 	      ControlData = NewData#player{health = Data#player.health},
 	      ?assertEqual(Data, ControlData),
 	      flush()
@@ -358,12 +360,9 @@ player_test_() ->
 	      Data = #player{name = "foo"},
 	      Zone = zonemaster:get_zone(Data#player.location),
 	      zone:enter(Zone, self(), "foo", login),
-	      ?assertEqual(handle_cast({command, "go north"}, 
-				       {self(), Zone, Data, {normal,none,none}}),
-			   {noreply, {self(), zonemaster:get_zone(1), 
-				      #player{name="foo",location=1,
-					      health=Data#player.health},
-				      {normal,none,none}}}),
+	      ?assertEqual({noreply, {self(), zonemaster:get_zone(1), #player{name="foo",location=1, health=Data#player.health},{normal,none,none}}}, 
+			   handle_cast({command, "go north"}, {self(), Zone, Data, {normal,none,none}})
+			  ),
 	      fetch(),
 	      fetch(),
 	      ?assertEqual({message, "You successfully moved north"}, fetch()),
