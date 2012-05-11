@@ -20,9 +20,9 @@ REQUIRED_DIR_NAME := pop_2012_project_group_$(GROUP_NUMBER)
 PROJECT_DIR := $(notdir $(shell pwd))
 
 USER=$(shell whoami)
-RANDOMCLIENT=kidclient$(bash -c \"echo \\$RANDOM\")
-MACHINE=$(hostname)
-SEVER=\'kidserver@$(hostname)\'
+RANDOMCLIENT= kidclient$(shell bash -c "echo \$$RANDOM")
+MACHINE=$(shell hostname)
+SERVER='kidserver@$(MACHINE)'
 ARCHIVE_NAME :=  $(REQUIRED_DIR_NAME)_archive_$(USER)_$(shell date "+%Y-%m-%d__%H:%M:%S")__.tar.gz
 ARCHIVE_DIR := ..
 
@@ -33,10 +33,11 @@ ebin/%.beam: src/%.erl
 	$(ERLC) $(ERLC_FLAGS) -o ebin $<
 
 start_client: all
-	@echo "Connect by typing \"client:connect('kidserver@<Server-Name>').\""
-	@echo " and pressing enter (replace <Server-Name> with the name of the server)."
+	@bash -c "echo $$RANDOM"
+	@echo "Connect by typing \"client:connect($(SERVER)).\""
+	@echo " and pressing enter."
 	@echo " ------ "
-	erl -noshell -name $(RANDOMCLIENT) -pa ebin -setcookie kid-mud -eval "client:connect($(MACHINE))"
+	erl -name $(RANDOMCLIENT) -pa ebin -setcookie kid-mud
 
 start_server: all
 	erl -name kidserver -setcookie kid-mud -pa ebin -mnesia dir database -eval "application:start(mnesia)" -eval "application:start(kidmud)"
