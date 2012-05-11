@@ -169,7 +169,8 @@ handle_cast({command, Command},
 
 	logout ->
 	    zone:logout(Zone, self()),
-	    {stop, normal, State};
+	    playermaster:stop_player(Data#player.name),
+	    {noreply, State};
 
 	exits ->
 	    zone:exits(Zone, self()),
@@ -228,9 +229,10 @@ handle_cast({message, Description}, State={Console,_,_,_}) ->
     {noreply, State};
 
 
-handle_cast(kick, State={Console,_,_,_}) ->
+handle_cast(kick, State={Console,_,#player{name=Name},_}) ->
     Console ! {message, "You have been kicked!"},
-    {stop, normal, State};
+    playermaster:stop_player(Name),
+    {noreply, State};
 
 handle_cast({damage, Damage}, {Console, Zone, Data, CombatState}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
@@ -242,7 +244,8 @@ handle_cast({damage, Damage}, {Console, Zone, Data, CombatState}) ->
 	    Console ! {message, "You are Dead!"},
 	    zone:death(Zone, self()),
 	    %% Player dies permanently
-	    {stop, normal, {Console, Zone, #player{name = Data#player.name}, CombatState}}
+	    playermaster:stop_player(Data#player.name),
+	    {noreply, {Console, Zone, #player{name = Data#player.name}, CombatState}}
     end;
 
 handle_cast(Msg, State) ->

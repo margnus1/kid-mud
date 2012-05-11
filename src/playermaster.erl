@@ -14,7 +14,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start/0, start_player/2]).
+-export([start_link/0, start/0, start_player/2, stop_player/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -34,6 +34,15 @@
 
 start_player(Name, Console) ->
     gen_server:call(?SERVER, {start_player, Name, Console}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%      Stops the player process for the player with name Name.
+%% @end
+%%--------------------------------------------------------------------
+-spec stop_player(string()) -> ok.
+stop_player(Name) ->
+    gen_server:cast(?SERVER, {stop_player, Name}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -98,7 +107,7 @@ handle_call({start_player, Name, Console}, _From, PlayerList) ->
 	false ->
 	    %% This case shouldnt happen
 	    PlayerPID = player_sup:start_player(Name, Console),
-	    {reply, {ok, PlayerPID}, PlayerList}
+	    {reply, {ok, PlayerPID}, [{PlayerPID, Name} | PlayerList]}
     end;
 
 handle_call(Request, _From, State) ->
@@ -116,6 +125,14 @@ handle_call(Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({stop_player, Name}, PlayerList) ->
+    case lists:keyfind(Name, 2, PlayerList) of
+	{_, _} ->
+	    player_sup:stop_player(Name),
+	    {noreply, lists:keydelete(Name, 2, PlayerList)};
+	false ->
+	    {noreply, PlayerList}
+    end;
 
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to playermaster: ~p~n", [Msg]),
