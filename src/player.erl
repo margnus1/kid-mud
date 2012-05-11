@@ -41,55 +41,55 @@ start_link(Name, Console) ->
 %% @doc
 %% Executes the given command if its a legal command by messaging
 %% the concerned modules
-%%
-%% @spec command(Player, Command) -> {noreply, Console, Zone, Data} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, logout, State}
 %% @end
 %%--------------------------------------------------------------------
+-spec command(pid(), string()) -> ok.
 command(Player, Command) ->
     gen_server:cast(Player, {command, Command}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Writes a message to the player
-%%
+%% Sends a message to the player
 %% @end
 %%--------------------------------------------------------------------
+-spec message(pid(), string()) -> ok.
 message(Player, Message) ->
     gen_server:cast(Player, {message, Message}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Kick the player
-%%
+%% Inform the player that he has been kicked
 %% @end
 %%--------------------------------------------------------------------
+-spec kick(pid()) -> ok.
 kick(Player) ->
     gen_server:cast(Player, kick).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Inform the player that he has taken damage
-%%
+%% Inflict damage to the player and inform the player that 
+%% he/she has taken damage
 %% @end
 %%--------------------------------------------------------------------
+-spec damage(pid(), integer()) -> ok.
 damage(Player, Damage) ->
     gen_server:cast(Player, {damage, Damage}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% Starts to attack the target if target is in the same zone
 %% @end
 %%--------------------------------------------------------------------
+-spec attack(pid(), string()) -> ok.
 attack(Player, Target) ->
     gen_server:cast(Player, {attack, Target}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% If Player attacks Target, Player stops attacking
 %% @end
 %%--------------------------------------------------------------------
+-spec stop_attack(pid(), string()) -> ok.
 stop_attack(Player, Target) ->
     gen_server:cast(Player, {stop_attack, Target}).
 
@@ -227,16 +227,16 @@ handle_cast({message, Description}, State={Console,_,_,_}) ->
     Console ! {message, Description},
     {noreply, State};
 
-
 handle_cast(kick, State={Console,_,_,_}) ->
     Console ! {message, "You have been kicked!"},
     {stop, normal, State};
 
-handle_cast({damage, Damage}, {Console, Zone, Data, CombatState}) ->
+handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
     {_, Health} = NewData#player.health,
     if 
-	Health > 0.0 ->					     
+	Health > 0.0 ->
+	    Console ! {[Attacker ," hits YOU for damage: ", Damage]},
 	    {noreply, {Console, Zone, NewData, CombatState}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},
@@ -248,7 +248,6 @@ handle_cast({damage, Damage}, {Console, Zone, Data, CombatState}) ->
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to player ~p: ~p~n", [self(), Msg]),
     {noreply, State}.
-
 
 %%--------------------------------------------------------------------
 %% @private
@@ -296,13 +295,10 @@ code_change(_OldVsn, State, _Extra) ->
 
 get_health(#player{health={Time, Health}}) ->
     min(Health + timer:now_diff(now(), Time) / 6000000.0, 100).
-    
-
 
 %%%===================================================================
 %%% EUnit Tests
 %%%===================================================================
-
 
 test_setup() ->
     mnesia:start(),
