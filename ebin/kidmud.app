@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 {application, kidmud, 
  [{description, "An Erlang MUD"},
   {vsn, "Ms2"},

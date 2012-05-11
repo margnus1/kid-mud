@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 -module(colour).
 -include_lib("eunit/include/eunit.hrl").
 -export([text/2, text/3]).

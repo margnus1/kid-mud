@@ -5,3 +5,6 @@ src/parser_grammar.erl
 doc/html/*
 !doc/html/overview.edoc
 database
+*~
+*/#*#
+#*#

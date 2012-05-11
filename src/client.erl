@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 -module(client).
 -export([connect/0, connect/1, remote/3]).
 

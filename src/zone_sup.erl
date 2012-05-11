@@ -1,6 +1,8 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 %%%-------------------------------------------------------------------
 %%% @author Magnus Lang <mala7837@beurling.it.uu.se>
-%%% @copyright (C) 2012, Magnus Lang
 %%% @doc
 %%% Dynamic supervisor for zone
 %%% @end

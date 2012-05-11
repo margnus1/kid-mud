@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 -module(parser).
 -export([parse/1]).
 -include_lib("eunit/include/eunit.hrl").

@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 -module(maploader).
 -export([load/1]).
 -include("zone.hrl").
@@ -57,6 +60,8 @@ parse(Device, Id, Acc) ->
 	eof ->
 	    file:close(Device),
 	    Acc;
+	[$%|_] ->
+	    parse(Device, Id, Acc);
 	"\n" -> 
 	    parse(Device, Id, Acc);
 	Data -> 
@@ -93,7 +98,7 @@ temp_file_name() ->
 parse_test() ->
     Name = temp_file_name(),
     file:write_file(Name, "1,-1\tTest Room One\n\n" ++ 
-			  "-1,1\tTest Room Two\n"),
+			  "-1,1\tTest Room Two\n% This is a comment\n"),
     {ok, Device} = file:open(Name, [read]),
     Result = parse(Device, 0, []),
     ?assertEqual([{1, {-1, 1}, "Test Room Two"},

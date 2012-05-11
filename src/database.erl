@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 -module(database).
 -export([read_player/1, write_player/1, read_zone/1, write_zone/1, init/0, setup/0, create_tables/1]).
 -include("zone.hrl").

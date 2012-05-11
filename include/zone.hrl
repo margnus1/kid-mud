@@ -1,3 +1,6 @@
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% See the file license.txt for copying permission.
+
 -type exit() :: {Direction :: north | east | south | west, Id :: integer()}.
 -record(zone, {id, desc="", npc=[], items=[], exits=[]}).
 -type zone() :: #zone {id :: integer(), desc :: string(), npc :: [integer()], items :: [{integer(), integer()}], exits :: [exit()]}.
