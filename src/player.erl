@@ -15,7 +15,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2, command/2, message/2, kick/1, damage/2, stop_attack/2]).
+-export([start_link/2, command/2, message/2, kick/1, damage/3, stop_attack/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -71,9 +71,9 @@ kick(Player) ->
 %% he/she has taken damage
 %% @end
 %%--------------------------------------------------------------------
--spec damage(pid(), integer()) -> ok.
-damage(Player, Damage) ->
-    gen_server:cast(Player, {damage, Damage}).
+-spec damage(pid(), integer(), string()) -> ok.
+damage(Player, Damage, Attacker) ->
+    gen_server:cast(Player, {damage, Damage, Attacker}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -169,7 +169,8 @@ handle_cast({command, Command},
 
 	logout ->
 	    zone:logout(Zone, self()),
-	    {stop, normal, State};
+	    playermaster:stop_player(Data#player.name),
+	    {noreply, State};
 
 	exits ->
 	    zone:exits(Zone, self()),
@@ -227,9 +228,10 @@ handle_cast({message, Description}, State={Console,_,_,_}) ->
     Console ! {message, Description},
     {noreply, State};
 
-handle_cast(kick, State={Console,_,_,_}) ->
+handle_cast(kick, State={Console,_,#player{name=Name},_}) ->
     Console ! {message, "You have been kicked!"},
-    {stop, normal, State};
+    playermaster:stop_player(Name),
+    {noreply, State};
 
 handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
@@ -242,7 +244,8 @@ handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
 	    Console ! {message, "You are Dead!"},
 	    zone:death(Zone, self()),
 	    %% Player dies permanently
-	    {stop, normal, {Console, Zone, #player{name = Data#player.name}, CombatState}}
+	    playermaster:stop_player(Data#player.name),
+	    {noreply, {Console, Zone, #player{name = Data#player.name}, CombatState}}
     end;
 
 handle_cast(Msg, State) ->
@@ -311,27 +314,36 @@ fetch() ->
             Anything
     end.
 
+flush() ->
+    receive 
+	_ -> flush()
+    after 1 ->
+	    ok
+    end.
+
 player_test_() ->
     {setup, fun test_setup/0, 
      [
       fun () ->		  
 	      ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever,ever}),
 			   {noreply, {self(),what,ever,ever}}),
-	      ?assertEqual(fetch(), {message, "foo"})
+	      ?assertEqual({message, "foo"}, fetch())
       end,
-      fun () ->		  
-	      ?assertEqual(handle_cast(kick, {self(),what,ever,ever}),
-			   {stop, normal, {self(),what,ever,ever}}),
-	      ?assertEqual(fetch(), {message, "You have been kicked!"})
-      end,
+      %%fun () ->		  
+%%	      ?assertEqual(handle_cast(kick, {self(),what,ever,ever}),
+%%			   {noreply, {self(),what,ever,ever}}),
+%%	      ?assertEqual(fetch(), {message, "You have been kicked!"})
+ %%     end,
       fun () ->
 	      %% Test for handle_cast({damage, integer()}, {pid(),pid(),player()}
 	      Data = #player{name = "Pontus"},
 	      {noreply,{what,ever, NewData, ever}} = 
-		  handle_cast({damage, 20}, {what,ever, Data, ever}),
+		  handle_cast({damage, 20, "hanna"}, {what,ever, Data, ever}),
 	      ?assertEqual(round(element(2, NewData#player.health)), 80),
+%%	      ?assertEqual({message, "hanna hits YOU for damage: 20"}, fetch()),
 	      ControlData = NewData#player{health = Data#player.health},
-	      ?assertEqual(Data, ControlData)
+	      ?assertEqual(Data, ControlData),
+	      flush()
       end, 
       ?_assertEqual(handle_cast("test", state), {noreply, state}),
       ?_assertEqual(get_health(#player{name = "foo"}), 100),
