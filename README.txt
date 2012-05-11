@@ -76,13 +76,17 @@ To compile the project, simply type make and press enter.
 
 ==== TO RUN AND TEST THE SYSTEM ==== 
 
-Add a short description on how to run and test your system. Here you
-might give pointers to more details in the doc/final_presentation.pdf
-document. 
+To use the MUD, you need to start the server. The server needs a database, so
+begin by typing "make setup". This is nessescary only once.
+You then start the server by typing "make start_server".
+To connect to it from another terminal, type "make start_client" and use the supplied command to start a client sesion against the server.
 
-If possible, add targets to the Makefile that can be used to start the
-system (make start, make start_server, make start_client or similar as
-necessary). 
+When you have logged in, you can write this, among other things:
+go north        ==> Moves to zone adjacent to the north
+say Hi!		==> Says Hi! to the other players
+attack Peter	==> Attacks Peter
+stop   		==> You just wanted to intimidate him, so you stop attacking
+logout		==> Peter is mad with you, so you better leave
 
 ==== MORE INFORMATION (optional) ==== 
 
