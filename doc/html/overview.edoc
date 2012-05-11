@@ -1,13 +1,13 @@
-@author Eric Arnerl√∂v <eric.arnerlov.4839@student.uu.se>
+@author Eric Arnerlˆv <eric.arnerlov.4839@student.uu.se>
 @author Michael Bergroth <michael.bergroth.5739@student.uu.se>
-@author Magnus L√•ng <magnus.lang.7837@student.uu.se>
+@author Magnus LÂng <magnus.lang.7837@student.uu.se>
 @author Mikael Wiberg <mikael.wiberg.6269@studnet.uu.se>
 @version Milestone 2
 @title Kid-MUD
 
 @doc 
 A MUD (Multi User Dungeon) is a text- based online game where players 
-perform actions by typing them (such as ‚Äúgo north‚Äù or ‚Äúattack goblin‚Äù). 
+perform actions by typing them (such as ìgo northî or ìattack goblinî). 
 The world is partitioned into zones, and each player exists in one zone 
 at any one time, and can move to neighboring zones. Zones can be occupied 
 by several players as well as one or more NPC (Non player characters) that 
