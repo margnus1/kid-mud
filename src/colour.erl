@@ -10,6 +10,8 @@
 -spec text(Foreground :: colour(), Text :: io_list()) -> io_list().
 text(Foreground, Text) ->
     Text.
+    %% The control characters are escaped by io:fprint so this is currently useless
+    %% [27, $[, 30 + get_colour(Foreground), $m, Text, 27, $[, $m].
 
 %% @doc 
 %%      Formats the text Text with foreground colour Foreground
@@ -20,7 +22,13 @@ text(Foreground, Text) ->
 text(Foreground, Background, Text) ->
     Text.
 
-
-
-colour_test_() ->
-    [?_assert(colourz =:= true)].
+%% @doc Returns the ANSI colour code for colour Colour
+-spec get_colour(Colour::colour()) -> integer().
+get_colour(black) -> 0;
+get_colour(red) -> 1; 
+get_colour(green) -> 2;
+get_colour(yellow) -> 3;
+get_colour(blue) -> 4;
+get_colour(magenta) -> 5;
+get_colour(cyan) -> 6;
+get_colour(white) -> 7.
