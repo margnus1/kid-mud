@@ -318,9 +318,10 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
 	{TargetPID, TargetName} ->
 
 	    message_players(
-	      lists:delete({TargetPID,TargetName}, Players),
+	      lists:keydelete(TargetPID, 1, Players),
 	      message, io_lib:format("~s hits ~s for ~p",
-					      [Name, Target, Damage])),
+				     [Name, Target, Damage])),
+
 	    player:damage(TargetPID, Damage, Name),
 	    {noreply, {Players, Data}};
 
@@ -426,7 +427,7 @@ look_message(Players, Zone) ->
 format_item(Amount, Item) ->
     lists:flatten(
       io_lib:format(
-	"~d ~s", [Amount, Item#item.name])).
+	"~p ~s", [Amount, Item#item.name])).
 
 %% @doc Constructs a "exits" message
 exits_message([]) ->
@@ -608,22 +609,24 @@ zone_kick_test_() ->
     [fun () -> handle_cast({kick, "Timmy"}, {[{self(), "Timmy"},{self(), "B"}], 
 					     #zone{id=12, exits=[]}}),
 
-	       ?assertEqual({'$gen_cast', kick},
-			    fetch()),
+	       ?assertEqual({'$gen_cast', kick}, fetch()),
 	       ?assertEqual({'$gen_cast', 
 			     {message, ["Timmy", " has logged out"]}},fetch())
      end].
 
 zone_attack_test_() ->
     [fun () ->
-	     handle_cast({attack, self(), "Kurt", 1}, {[{self(),"Kurt"}],
-						       #zone{id=5, exits=[]}}),
+	     handle_cast({attack, self(), "Kurt", 1}, 
+			 {[{self(),"Kurt"},{self(),"Dingo"}],
+			  #zone{id=5, exits=[]}}),
+
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message))
+	     ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message)),
+
+	     ?assertEqual({'$gen_cast', {damage, 1, "Kurt"}}, fetch())
+
      end,
 
-     ?_assertEqual({'$gen_cast', {damage, 1}},
-		   fetch()),
      fun () ->
 	     handle_cast({attack, self(), "Scurt", 10}, 
 			 {[{self(),"Kurt"}], 
