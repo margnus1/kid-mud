@@ -74,8 +74,8 @@ create_table(Table, Options, Attributes) ->
 	{atomic, ok} -> ok;
 	{aborted, {already_exists, Table}} ->
 	    case mnesia:table_info(Table, attributes) of
-		Attributes -> ok;
-		_BadAttributes ->
+		GoodAtts when GoodAtts =:= Attributes -> ok;
+		_BadAtts ->
 		    {atomic, ok} = mnesia:delete_table(Table),
 		    case mnesia:create_table(
 			   Table, [{attributes, Attributes}] ++ Options) of
