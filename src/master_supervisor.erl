@@ -1,13 +1,12 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
 %%% @author Magnus Lång <mala7837@beurling.it.uu.se>
-%%% @copyright (C) 2012, Magnus Lang
 %%% @doc
 %%%      Main supervisor for the Kid-MUD server
 %%% @end
-%%% Created :  9 May 2012 by Magnus Laåg <mala7837@beurling.it.uu.se>
+%%% Created :  9 May 2012 by Magnus Lång <mala7837@beurling.it.uu.se>
 %%%-------------------------------------------------------------------
 -module(master_supervisor).
 

@@ -1,12 +1,12 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
-%%% @author Magnus Lang <mala7837@beurling.it.uu.se>
+%%% @author Magnus Lång <mala7837@beurling.it.uu.se>
 %%% @doc
 %%% Dynamic supervisor for zone
 %%% @end
-%%% Created :  9 May 2012 by Magnus Lang <mala7837@beurling.it.uu.se>
+%%% Created :  9 May 2012 by Magnus Lång <mala7837@beurling.it.uu.se>
 %%%-------------------------------------------------------------------
 -module(zone_sup).
 

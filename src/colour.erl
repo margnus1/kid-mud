@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg and Michael Bergroth
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
 %% See the file license.txt for copying permission.
 
 -module(colour).
