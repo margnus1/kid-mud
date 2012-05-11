@@ -1,17 +1,16 @@
 %%%-------------------------------------------------------------------
-%%% @author Magnus Lång <mala7837@beurling.it.uu.se>
-%%% @copyright (C) 2012, Magnus Lang
+%%% @author Michael Bergroth
+%%% @copyright MIT license
 %%% @doc
-%%%      Main supervisor for the Kid-MUD server
+%%% Dynamic supervisor for player
 %%% @end
-%%% Created :  9 May 2012 by Magnus Laåg <mala7837@beurling.it.uu.se>
 %%%-------------------------------------------------------------------
--module(master_supervisor).
+-module(player_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start/0]).
+-export([start_link/0, start_player/2, stop_player/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -24,18 +23,6 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts the supervisor without a link.
-%% To be used from shell when debugging only.
-%% @spec start() -> {ok, Pid} | ignore | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-start() ->
-    {ok, Pid} = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
-    unlink(Pid).
-
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Starts the supervisor
 %%
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
@@ -43,6 +30,34 @@ start() ->
 %%--------------------------------------------------------------------
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the player with name Name 
+%%
+%% @spec start_zone(Id) -> pid() | {error, term()}
+%% @end
+%%--------------------------------------------------------------------
+start_player(Name, Console) ->
+    Child = {{player, Name}, {player, start_link,[Name, Console]}, permanent,
+	     2000, worker, [player]},
+    case supervisor:start_child(?SERVER, Child) of
+	{ok, Pid} -> Pid;	  
+	{ok, Pid, _} -> Pid;
+	{error, Info} -> {error, Info}
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Stop the player with name Name
+%%
+%% @spec stop_zone(Id) -> ok | {error, term()}
+%% @end
+%%--------------------------------------------------------------------
+stop_player(Name) ->
+    supervisor:terminate_child(?SERVER, {player, Name}),
+    supervisor:delete_child(?SERVER, {player, Name}).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -68,22 +83,8 @@ init([]) ->
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-    Restart = permanent,
-    Shutdown = 2000, % timeout
-
-    PlayerMaster = {"Player Master", {playermaster, start_link, []},
-		   Restart, Shutdown, worker, [playermaster]}, 
-
-    PlayerSup = {"Player Supervisor", {player_sup, start_link, []},
-	       Restart, Shutdown, supervisor, [player_sup]},
-
-    ZoneMaster = {"Zone Master", {zonemaster, start_link, []},
-		  Restart, Shutdown, worker, [zonemaster]},
-
-    ZoneSup = {"Zone Supervisor", {zone_sup, start_link, []},
-	       Restart, Shutdown, supervisor, [zone_sup]},
-
-    {ok, {SupFlags, [PlayerMaster, PlayerSup, ZoneMaster, ZoneSup]}}.
+    
+    {ok, {SupFlags, []}}.
 
 %%%===================================================================
 %%% Internal functions
