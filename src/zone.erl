@@ -340,8 +340,10 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	    {noreply,  {[], Data}};
 
 	UpdatedPlayers ->
-	    message_players(UpdatedPlayers, message, 
-			    [Name, " has been slain!"]),
+	    %%message_players(UpdatedPlayers, message, 
+		%%	    [Name, " has been slain!"]),
+
+	    playermaster:broadcast([Name, " has been slain!"]),
 
 	    message_players(Players, stop_attack, Name),
 	    {noreply, {UpdatedPlayers, Data}}
@@ -460,6 +462,7 @@ format_arrival(login) -> " logged in".
 test_setup() ->
     database_setup(),
     register(zonemaster, self()),
+    %%register(playermaster, self()),  %%cant register playermaster..
     ok.
 
 database_setup() ->
@@ -646,19 +649,20 @@ zone_death_test_() ->
      fun () ->
 	     handle_cast(
 	       {death, self()}, {[{self(),"Kurt"}, {self(),"Allan"}], 
-				 #zone{id=5, exits=[]}}),
-	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Kurt has been slain!", lists:flatten(Message))  
+				 #zone{id=5, exits=[]}})
+	     %%?assertEqual({'$gen_cast',  {broadcast, 
+	     %%		["Kurt", " has been slain!"]}}, fetch())
+
      end,
 
-?_assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())].
+     ?_assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())].
 
 zone_test_() ->
-     [?_assertEqual(" arrives from south", format_arrival(north)),
-      ?_assertEqual(" arrives from west", format_arrival(east)),
-      ?_assertEqual(" arrives from north", format_arrival(south)),
-      ?_assertEqual(" arrives from east", format_arrival(west)),
-      ?_assertEqual(" logged in", format_arrival(login))
- ].
+    [?_assertEqual(" arrives from south", format_arrival(north)),
+     ?_assertEqual(" arrives from west", format_arrival(east)),
+     ?_assertEqual(" arrives from north", format_arrival(south)),
+     ?_assertEqual(" arrives from east", format_arrival(west)),
+     ?_assertEqual(" logged in", format_arrival(login))
+    ].
 
     

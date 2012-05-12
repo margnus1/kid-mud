@@ -14,7 +14,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start/0, start_player/2, stop_player/1]).
+-export([start_link/0, start/0, start_player/2, stop_player/1, broadcast/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -28,21 +28,32 @@
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Starts the player process for the player with name Name
 %%
 %% @end
 %%--------------------------------------------------------------------
-
+-spec start_player(string(), pid()) -> ok.
 start_player(Name, Console) ->
     gen_server:call(?SERVER, {start_player, Name, Console}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%%      Stops the player process for the player with name Name.
+%% Stops the player process for the player with name Name
+%%
 %% @end
 %%--------------------------------------------------------------------
 -spec stop_player(string()) -> ok.
 stop_player(Name) ->
     gen_server:cast(?SERVER, {stop_player, Name}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Broadcasts the message Msg to all the players processes
+%% @end
+%%--------------------------------------------------------------------
+-spec broadcast(string()) -> ok.
+broadcast(Msg) ->
+    gen_server:cast(?SERVER, {broadcast, Msg}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -110,6 +121,7 @@ handle_call({start_player, Name, Console}, _From, PlayerList) ->
 	    {reply, {ok, PlayerPID}, [{PlayerPID, Name} | PlayerList]}
     end;
 
+
 handle_call(Request, _From, State) ->
     io:fwrite("Unknown call to playermaster: ~p~n", [Request]),
     {reply, ok, State}.
@@ -133,6 +145,12 @@ handle_cast({stop_player, Name}, PlayerList) ->
 	false ->
 	    {noreply, PlayerList}
     end;
+
+
+handle_cast({broadcast, Msg}, PlayerList) ->
+    broadcast_msg(PlayerList, Msg),
+    {noreply,PlayerList};
+
 
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to playermaster: ~p~n", [Msg]),
@@ -181,6 +199,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% @doc Broadcasts the message Msg to all the players
+broadcast_msg([{PlayerPID, _}|Rest], Msg) ->
+    player:message(PlayerPID, Msg), 
+    broadcast_msg(Rest, Msg);
+broadcast_msg([], _) -> ok.
 
 
 %%%===================================================================
