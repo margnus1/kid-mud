@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -145,7 +145,7 @@ handle_call(Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({command, Command}, 
-	    State = {Console, Zone, Data, CombatState = {PlayerState, Target, AttackTimer}}) ->
+	    State = {Console, Zone, Data, CombatState = {_, Target, AttackTimer}}) ->
     case parser:parse(Command) of
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
@@ -222,10 +222,10 @@ handle_cast({attack, NewTarget},
     end,
 
     zone:attack(Zone, self(), NewTarget, Damage),
-    {noreply, {Console, Zone, Data, {normal, Target, AttackTimer}}};
+    {noreply, {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
-		{Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
+		{Console, Zone, Data, {_, Target, AttackTimer}}) ->
     if 
 	ZoneTarget =:= Target ->
 	    Console ! {message, "You have stopped attacking"},

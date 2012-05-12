@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -211,9 +211,12 @@ handle_call({go, PlayerPID, Direction},
 
 		UpdatedPlayers ->
 		    Name = get_name(PlayerPID, Players),
-		    message_players(UpdatedPlayers, message, 
-				    [Name, " has left ", 
-				     atom_to_list(Direction)]),
+
+		    [player:message(
+		       PlayerPIDs, [Name, " has left ", 
+				    atom_to_list(Direction)]) || 
+			{PlayerPIDs,_} <- UpdatedPlayers],
+
 
 		    {reply, {ok, DirectionID}, {UpdatedPlayers, Data}}
 	    end
@@ -221,9 +224,16 @@ handle_call({go, PlayerPID, Direction},
 
 
 handle_call({validate_target, Target},
-	    _From, {Players, Data}) ->
+	    _From, {Players, Data}) -> %%= #zone{npc=NPC}}) ->
 
-    %% @todo make help function
+    %% @todo make help function maybe
+
+    %%case lists:keyfind(Target, 2, NPC) of	
+    %%	{_,_,_,_,_} ->
+    %%	    {reply, valid_target, {Players, Data}};
+    %%	false ->
+    %%	    ok
+    %%    end,
 
     case lists:keyfind(Target, 2, Players) of	
 	{_, _} ->
@@ -249,11 +259,17 @@ handle_call(Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 
-handle_cast({look, PlayerPID}, State={Players, Data = #zone{exits=Exits}}) ->
+handle_cast({look, PlayerPID}, 
+	    State={Players, Data = #zone{exits=Exits}}) ->
     player:message(
       PlayerPID, look_message(lists:keydelete(PlayerPID, 1, Players), Data)),
     player:message(PlayerPID, exits_message(Exits)),
-    {noreply, State};
+
+    %%Bara ett test, som inte funkade helt korrekt
+    %%NewNPC =  [#npc{id=random:uniform(100), 
+    %%		    name="ARNE", disp=aggressive} | NPC],
+
+    {noreply, {Players,Data}}; %%#zone{npc=NewNPC}}};
 
 
 handle_cast({enter, PlayerPID, Name, Direction}, 
@@ -261,12 +277,13 @@ handle_cast({enter, PlayerPID, Name, Direction},
     player:message(PlayerPID, look_message(Players, Data)),
     player:message(PlayerPID, exits_message(Exits)),
 
-    message_players(Players, message, [Name, format_arrival(Direction)]),
+    [player:message(
+       PlayerPIDs, [Name, format_arrival(Direction)] ) || 
+	{PlayerPIDs,_} <- Players],
 
     UpdatedPlayers = [{PlayerPID, Name} | Players],
 
     {noreply, {UpdatedPlayers, Data}};
-
 
 handle_cast({logout, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
     case lists:keydelete(PlayerPID, 1, Players) of 
@@ -276,9 +293,12 @@ handle_cast({logout, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	    {noreply,  {[], Data}};
 
 	UpdatedPlayers ->
-	    message_players(
-	      UpdatedPlayers, message, 
-	      [get_name(PlayerPID, Players), " has logged out"]),
+
+	    [player:message(
+	       PlayerPIDs, 
+	       [get_name(PlayerPID, Players), " has logged out"]) || 
+		{PlayerPIDs,_} <- UpdatedPlayers],
+
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
@@ -299,8 +319,12 @@ handle_cast({kick, Name}, {Players, Data = #zone{id=Id}}) ->
 		    {noreply,  {[], Data}};
 
 		UpdatedPlayers ->
-		    message_players(
-		      UpdatedPlayers, message, [Name, " has logged out"]),
+
+		    [player:message(
+		       PlayerPIDs, 
+		       [Name, " has logged out"]) || 
+			{PlayerPIDs,_} <- UpdatedPlayers],
+
 		    {noreply, {UpdatedPlayers, Data}}
 	    end;
 
@@ -309,45 +333,57 @@ handle_cast({kick, Name}, {Players, Data = #zone{id=Id}}) ->
     end;
 
 
-handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
+handle_cast({attack, PlayerPID, Target, Damage}, 
+	    State = {Players, Data}) -> %% = #zone{npc=NPC}}) ->
+
     Name = get_name(PlayerPID, Players),
 
     %% @todo Add NPC combat
+    %%case lists:keyfind(Target, 3, NPC) of	
+    %%	NPCtarget ->
+    %%	    player:message(PlayerPID,"You!!!!!!!!!!!!!"),
+    %%	    {noreply, State};
+    %%	false ->
+    %%	    ok
+    %%   end,
 
+    %% Player VS Player combat
     case lists:keyfind(Target, 2, Players) of	
 	{TargetPID, _} ->
+	    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
+	    Rest =  lists:keydelete(TargetPID, 1, OtherPlayers),
+	    %% Om man slår sig själv får man 2 meddelanden, fixa?
 	    case Damage of 
 		miss ->
-		    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
+		    [player:message(
+		       PlayerPIDs, 
+		       io_lib:format("~s misses ~s",
+				     [Name, Target])) || 
+			{PlayerPIDs,_} <- Rest],
 
-		    message_players(
-		      lists:keydelete(TargetPID, 1, OtherPlayers),
-		      message, io_lib:format("~s misses ~s",
-					     [Name, Target])),
-		    player:message(PlayerPID, ["You miss your attack on ", Target]),
-		    player:message(TargetPID, [Name, " misses his attack on YOU"]),
-
-		    {noreply, {Players, Data}};
+		    player:message(PlayerPID, 
+				   ["You miss your attack on ", Target]),
+		    player:message(TargetPID,
+				   [Name, " misses his attack on YOU"]),
+		    {noreply, State};
 		Damage -> 
+		    [player:message(
+		       PlayerPIDs, 
+		       io_lib:format("~s hits ~s for ~p",
+				     [Name, Target, Damage])) || 
+			{PlayerPIDs,_} <- Rest],
 
-		    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
-
-		    message_players(
-		      lists:keydelete(TargetPID, 1, OtherPlayers),
-		      message, io_lib:format("~s hits ~s for ~p",
-					     [Name, Target, Damage])),
 		    player:message(
 		      PlayerPID, io_lib:format(
 				   "You hit ~s for ~p", [Target, Damage])),
 
 		    player:damage(TargetPID, Damage, Name),
-		    {noreply, {Players, Data}}
+		    {noreply, State}
 	    end;
 
 	false ->
 	    player:stop_attack(PlayerPID, Target),
-	    {noreply, {Players, Data}} 
-
+	    {noreply, State} 
     end;
 
 
@@ -360,19 +396,21 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	    {noreply,  {[], Data}};
 
 	UpdatedPlayers ->
-	    %%message_players(UpdatedPlayers, message, 
-	    %%	    [Name, " has been slain!"]),
-
 	    playermaster:broadcast([Name, " has been slain!"]),
 
-	    message_players(Players, stop_attack, Name),
+	    [player:stop_attack(
+	       PlayerPIDs, Name) || {PlayerPIDs,_} <- Players],
+
 	    {noreply, {UpdatedPlayers, Data}}
     end;
 
 
 handle_cast({say, PlayerPID, Message}, State={Players,_}) ->
     Name = get_name(PlayerPID, Players),
-    message_players(Players, message, [Name, " says \"", Message, "\""]),
+
+    [player:message(
+       PlayerPIDs, 
+       [Name, " says \"", Message, "\""]) || {PlayerPIDs,_} <- Players],
     {noreply, State};
 
 
@@ -426,22 +464,17 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-%% @doc Sends a message to all the players in the zone
-message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
-    player:Notice(PlayerPID, Arg1), 
-    message_players(Rest, Notice, Arg1);
-message_players([], _, _) -> ok.
-
 %% @doc Constructs a "look" message
 -spec look_message(Players::[player()], Zone::zone()) -> string().
 
 look_message(Players, Zone) ->
     [Zone#zone.desc,
-     %% lists:map(fun(NPC) -> "Here stands " ++ NPC#npc.name end,
-     %% 		       Zone#zone.npc) ++
+     %%lists:map(fun(NPC) -> ["\n", "Here stand a ", 
+     %%			    NPC#npc.name, ":", atom_to_list(NPC#npc.disp)] end,
+     %%	       Zone#zone.npc),
      colour:text(blue, lists:map(fun({_, Name}) -> 
-					["\n", "Here stands ", Name] end,
-				Players))]. %% ++
+					 ["\n", "Here stands ", Name] end,
+				 Players))]. %% ++
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
       %% 		format_item(Amount, Item) end, Zone#zone.items),
 
@@ -522,8 +555,7 @@ zone_go_test_() ->
 		    handle_call(
 		      {go, self(), south}, self(), 
 		      {[{self(),"Arne"}], 
-		       #zone{id=12, desc="A room!", exits=[{south,9}]}}))
-     ]}.
+		       #zone{id=12, desc="A room!", exits=[{south,9}]}}))]}.
 
 zone_validate_target_test_() ->
     [?_assertEqual({reply,valid_target, 
@@ -576,6 +608,20 @@ zone_enter_test_() ->
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("A room!", lists:flatten(Message)),
 	     fetch() % exits, already tested
+     end,
+
+     fun () ->
+	     handle_cast({enter, self(), "Gunde", south}, 
+			 {[{self(),"gg"}], 
+			  #zone{id=14, desc="A room!", exits=[]}}),
+
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("A room!\nHere stands gg", lists:flatten(Message)),
+	     fetch(), % exits, already tested
+
+	     ?assertEqual({'$gen_cast',
+			   {message, ["Gunde" ," arrives from north"]}}, 
+			  fetch())
      end].
 
 zone_look_test_() ->
@@ -659,17 +705,20 @@ zone_attack_test_() ->
 
      fun () ->
 	     handle_cast({attack, self(), "Dingo", miss}, 
-			 {[{self(),"Kurt"}, {self(),"Dingo"}, {self(), "Observer"}],
+			 {[{self(),"Kurt"}, 
+			   {self(),"Dingo"}, {self(), "Observer"}],
 			  #zone{id=5, exits=[]}}),
 
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("Kurt misses Dingo", lists:flatten(Message)),
 
 	     {'$gen_cast', {message, Message2}} = fetch(),
-	     ?assertEqual("You miss your attack on Dingo", lists:flatten(Message2)),
+	     ?assertEqual("You miss your attack on Dingo", 
+			  lists:flatten(Message2)),
 
 	     {'$gen_cast', {message, Message3}} = fetch(),
-	     ?assertEqual("Kurt misses his attack on YOU", lists:flatten(Message3))
+	     ?assertEqual("Kurt misses his attack on YOU", 
+			  lists:flatten(Message3))
 
      end].
 
