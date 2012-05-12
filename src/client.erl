@@ -13,17 +13,15 @@ connect() ->
 	    io:fwrite("Your name is too long, please try again. ~n"),
 	    connect();
        LenName =< 15 ->
-	    ok
-    end,
-
-    Writer = spawn(fun writer/0),
-    case playermaster:start_player(Name, Writer) of
-	{ok, Server} ->
-	    loop(Server, Writer);
-	login_failed ->
-	    Writer ! plz_die,
-	    io:fwrite("You cannot connect with name ~p~n", [Name]),
-	    connect()
+            Writer = spawn(fun writer/0),
+            case playermaster:start_player(Name, Writer) of
+                {ok, Server} ->
+                    loop(Server, Writer);
+                login_failed ->
+                    Writer ! plz_die,
+                    io:fwrite("You cannot connect with name ~p~n", [Name]),
+                    connect()
+            end
     end.
 
 %% @doc Starts a console session to the mud on the node Node
@@ -35,18 +33,16 @@ connect(Node) ->
 	    io:fwrite("Your name is too long, please try again. ~n"),
 	    connect(Node);
        LenName =< 15 ->
-	    ok
-    end,
-
-    Writer = spawn(fun writer/0),
-    spawn(Node, client, remote, [self(), Name, Writer]),
-    receive 
-	{server, {ok, Server}} -> 
-	    loop(Server, Writer); 
-	{server, login_failed} ->
-	    Writer ! plz_die,
-	    io:fwrite("You cannot connect with name ~p~n", [Name]),
-	    connect(Node)
+            Writer = spawn(fun writer/0),
+            spawn(Node, client, remote, [self(), Name, Writer]),
+            receive 
+                {server, {ok, Server}} -> 
+                    loop(Server, Writer); 
+                {server, login_failed} ->
+                    Writer ! plz_die,
+                    io:fwrite("You cannot connect with name ~p~n", [Name]),
+                    connect(Node)
+            end
     end.
 
 %% @doc Performs connection at remote node
