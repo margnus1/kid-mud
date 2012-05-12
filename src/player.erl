@@ -191,7 +191,7 @@ handle_cast({command, Command},
 		    Console ! {message, ["You are already attacking ", Target]},
 		    {noreply, State};
 		Target =/= NewTarget ->
-		    case zone:validate_target(Zone, self(), NewTarget) of
+		    case zone:validate_target(Zone, NewTarget) of
 			no_target ->
 			    Console ! {message,
 				       ["Can't find any \"", NewTarget, "\" here"] },
@@ -213,7 +213,13 @@ handle_cast({command, Command},
 
 handle_cast({attack, NewTarget}, 
 	    {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
-    Damage = 10 + random:uniform(5),
+
+    ToHit = random:uniform(100),
+    if ToHit > 20 ->
+	    Damage = 9 + random:uniform(6);
+       ToHit =< 20 -> 
+	    Damage = miss
+    end,
 
     zone:attack(Zone, self(), NewTarget, Damage),
     {noreply, {Console, Zone, Data, {normal, Target, AttackTimer}}};

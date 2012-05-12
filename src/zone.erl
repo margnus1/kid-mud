@@ -14,7 +14,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1, go/3, validate_target/3, look/2, enter/4, logout/2,
+-export([start_link/1, go/3, validate_target/2, look/2, enter/4, logout/2,
 	 exits/2,  kick/2, death/2, attack/4, say/3]).
 
 %% gen_server callbacks
@@ -57,9 +57,9 @@ go(Zone, PlayerPID, Direction) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec validate_target(pid(), pid(), string()) -> ok.
-validate_target(Zone, PlayerPID, Target) ->
-    gen_server:call(Zone, {validate_target, PlayerPID, Target}).
+-spec validate_target(pid(), string()) -> ok.
+validate_target(Zone, Target) ->
+    gen_server:call(Zone, {validate_target,  Target}).
 
 
 %%--------------------------------------------------------------------
@@ -220,13 +220,13 @@ handle_call({go, PlayerPID, Direction},
     end;
 
 
-handle_call({validate_target, PlayerPID, Target},
-	    _From, {Players, Data = #zone{id=Id, exits=Exits}}) ->
+handle_call({validate_target, Target},
+	    _From, {Players, Data}) ->
 
     %% @todo make help function
 
     case lists:keyfind(Target, 2, Players) of	
-	{TargetPID, _} ->
+	{_, _} ->
 	    {reply, valid_target, {Players, Data}};
 	false ->
 	    {reply, no_target, {Players, Data}}
@@ -315,19 +315,39 @@ handle_cast({attack, PlayerPID, Target, Damage}, {Players, Data}) ->
     %% @todo Add NPC combat
 
     case lists:keyfind(Target, 2, Players) of	
-	{TargetPID, TargetName} ->
+	{TargetPID, _} ->
+	    case Damage of 
+		miss ->
+		    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
 
-	    message_players(
-	      lists:keydelete(TargetPID, 1, Players),
-	      message, io_lib:format("~s hits ~s for ~p",
-				     [Name, Target, Damage])),
+		    message_players(
+		      lists:keydelete(TargetPID, 1, OtherPlayers),
+		      message, io_lib:format("~s misses ~s",
+					     [Name, Target])),
+		    player:message(PlayerPID, ["You miss your attack on ", Target]),
+		    player:message(TargetPID, [Name, " misses his attack on YOU"]),
 
-	    player:damage(TargetPID, Damage, Name),
-	    {noreply, {Players, Data}};
+		    {noreply, {Players, Data}};
+		Damage -> 
+
+		    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
+
+		    message_players(
+		      lists:keydelete(TargetPID, 1, OtherPlayers),
+		      message, io_lib:format("~s hits ~s for ~p",
+					     [Name, Target, Damage])),
+		    player:message(
+		      PlayerPID, io_lib:format(
+				   "You hit ~s for ~p", [Target, Damage])),
+
+		    player:damage(TargetPID, Damage, Name),
+		    {noreply, {Players, Data}}
+	    end;
 
 	false ->
 	    player:stop_attack(PlayerPID, Target),
 	    {noreply, {Players, Data}} 
+
     end;
 
 
@@ -341,7 +361,7 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 
 	UpdatedPlayers ->
 	    %%message_players(UpdatedPlayers, message, 
-		%%	    [Name, " has been slain!"]),
+	    %%	    [Name, " has been slain!"]),
 
 	    playermaster:broadcast([Name, " has been slain!"]),
 
@@ -385,7 +405,7 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {Players, Data=#zone{id=Id}}) ->
+terminate(_Reason, {Players, Data}) ->
     [player:kick(PlayerPID) || {PlayerPID,_} <- Players],
 
     database:write_zone(Data),
@@ -511,7 +531,7 @@ zone_validate_target_test_() ->
 		     #zone{id=14, desc="A room!",
 			   exits=[{south,5}]}}},
 		   handle_call(
-		     {validate_target, self(), "Kalle"}, self(), 
+		     {validate_target, "Kalle"}, self(), 
 		     {[{self(),"Kalle"}, {self(),"Arne"}],
 		      #zone{id=14, desc="A room!", exits=[{south,5}]}})),
 
@@ -520,14 +540,14 @@ zone_validate_target_test_() ->
 		     #zone{id=14, desc="A room",
 			   exits=[{south,5}]}}},
 		   handle_call(
-		     {validate_target, self(), "Arne"}, self(), 
+		     {validate_target, "Arne"}, self(), 
 		     {[{self(),"Kalle"}],
 		      #zone{id=14, desc="A room", exits=[{south,5}]}})),
 
      ?_assertEqual({reply,no_target, 
 		    {[],#zone{id=14, desc="A", exits=[]}}},
 		   handle_call(
-		     {validate_target, self(), "Arne"}, self(), 
+		     {validate_target, "Arne"}, self(), 
 		     {[],#zone{id=14, desc="A", exits=[]}}))].
 
 zone_say_test_() ->
@@ -624,7 +644,7 @@ zone_attack_test_() ->
 			  #zone{id=5, exits=[]}}),
 
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Kurt hits Kurt for 1", lists:flatten(Message)),
+	     ?assertEqual("You hit Kurt for 1", lists:flatten(Message)),
 
 	     ?assertEqual({'$gen_cast', {damage, 1, "Kurt"}}, fetch())
 
@@ -635,8 +655,23 @@ zone_attack_test_() ->
 			 {[{self(),"Kurt"}], 
 			  #zone{id=2, exits=[{north,1},{south,2}]}}),
 	     ?assertEqual({'$gen_cast', {stop_attack, "Scurt"}}, fetch())
-     end
-    ].
+     end,
+
+     fun () ->
+	     handle_cast({attack, self(), "Dingo", miss}, 
+			 {[{self(),"Kurt"}, {self(),"Dingo"}, {self(), "Observer"}],
+			  #zone{id=5, exits=[]}}),
+
+	     {'$gen_cast', {message, Message}} = fetch(),
+	     ?assertEqual("Kurt misses Dingo", lists:flatten(Message)),
+
+	     {'$gen_cast', {message, Message2}} = fetch(),
+	     ?assertEqual("You miss your attack on Dingo", lists:flatten(Message2)),
+
+	     {'$gen_cast', {message, Message3}} = fetch(),
+	     ?assertEqual("Kurt misses his attack on YOU", lists:flatten(Message3))
+
+     end].
 
 zone_death_test_() ->
     [
