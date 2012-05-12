@@ -212,7 +212,7 @@ handle_call({go, PlayerPID, Direction},
 		UpdatedPlayers ->
 		    Name = get_name(PlayerPID, Players),
 		    message_players(UpdatedPlayers, message, 
-				    [Name, " has left to the ", 
+				    [Name, " has left ", 
 				     atom_to_list(Direction)]),
 
 		    {reply, {ok, DirectionID}, {UpdatedPlayers, Data}}
@@ -488,7 +488,7 @@ zone_go_test_() ->
 
       ?_assertEqual(
 	 {'$gen_cast', 
-	  {message, ["Kalle", " has left to the ", "south"]}}, fetch()),
+	  {message, ["Kalle", " has left ", "south"]}}, fetch()),
 
       ?_assertEqual(
 	 {reply,{error,doesnt_exist}, 

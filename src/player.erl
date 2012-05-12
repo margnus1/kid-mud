@@ -193,13 +193,16 @@ handle_cast({command, Command},
 		Target =/= NewTarget ->
 		    case zone:validate_target(Zone, self(), NewTarget) of
 			no_target ->
-			    Console ! {message, ["Can't find any \"", NewTarget, "\" here"] },
+			    Console ! {message,
+				       ["Can't find any \"", NewTarget, "\" here"] },
 			    {noreply, State};
 			valid_target ->
-			    Console ! {message, ["You are now attacking ", NewTarget]},
+			    Console ! {message, 
+				       ["You are now attacking ", NewTarget]},
 			    timer:cancel(AttackTimer),
 			    {_,NewAttackTimer} = timer:send_interval(2000, {'$gen_cast',{attack, NewTarget}}),
-			    {noreply, {Console, Zone, Data, {combat, NewTarget, NewAttackTimer}}}
+			    {noreply, {Console, Zone, Data, 
+				       {combat, NewTarget, NewAttackTimer}}}
 		    end
 	    end;
 
@@ -210,7 +213,9 @@ handle_cast({command, Command},
 
 handle_cast({attack, NewTarget}, 
 	    {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
-    zone:attack(Zone, self(), NewTarget, 10),
+    Damage = 10 + random:uniform(5),
+
+    zone:attack(Zone, self(), NewTarget, Damage),
     {noreply, {Console, Zone, Data, {normal, Target, AttackTimer}}};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
@@ -238,7 +243,8 @@ handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
     {_, Health} = NewData#player.health,
     if 
 	Health > 0.0 ->
-	    Console ! {message, [Attacker ," hits YOU for damage: ", integer_to_list(Damage)]},
+	    Console ! {message, [Attacker ," hits YOU for damage: ", 
+				 integer_to_list(Damage)]},
 	    {noreply, {Console, Zone, NewData, CombatState}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},

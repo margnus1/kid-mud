@@ -8,6 +8,14 @@
 %% @spec connect() -> ok
 connect() ->
     Name = droplast(io:get_line("Name?> ")),
+    LenName = string:len(Name),
+    if LenName > 15 ->
+	    io:fwrite("Your name is too long, please try again. ~n"),
+	    connect();
+       LenName =< 15 ->
+	    ok
+    end,
+
     Writer = spawn(fun writer/0),
     case playermaster:start_player(Name, Writer) of
 	{ok, Server} ->
