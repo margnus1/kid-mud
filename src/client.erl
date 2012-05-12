@@ -30,6 +30,14 @@ connect() ->
 %% @spec connect(Node::node()) -> ok
 connect(Node) ->
     Name = droplast(io:get_line("Name?> ")),
+    LenName = string:len(Name),
+    if LenName > 15 ->
+	    io:fwrite("Your name is too long, please try again. ~n"),
+	    connect(Node);
+       LenName =< 15 ->
+	    ok
+    end,
+
     Writer = spawn(fun writer/0),
     spawn(Node, client, remote, [self(), Name, Writer]),
     receive 
