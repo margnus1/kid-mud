@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
+%% Copyright (c) 2012 Magnus Lï¿½ng, Mikael Wiberg and Michael Bergroth, Eric Arnerlï¿½v
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -187,6 +187,10 @@ handle_cast({command, Command},
 
 	{attack, NewTarget} ->
 	    if 
+		%%Target =:= Data#player.name -> %%Ska man kunna attackera sig sjÃ¤lv?
+		  %%  Console ! {message, "Are you trying to attack yourself?"},
+		   %% {noreply, State};
+		
 		Target =:= NewTarget ->
 		    Console ! {message, ["You are already attacking ", Target]},
 		    {noreply, State};
