@@ -8,11 +8,11 @@
 %% @spec connect() -> ok
 connect() ->
     Name = droplast(io:get_line("Name?> ")),
-    LenName = string:len(Name),
-    if LenName > 15 ->
-	    io:fwrite("Your name is too long, please try again. ~n"),
+    case check_name(Name) of
+	{failed, Reason} ->
+	    io:fwrite("~s~n",[Reason]),
 	    connect();
-       LenName =< 15 ->
+	ok ->
             Writer = spawn(fun writer/0),
             case playermaster:start_player(Name, Writer) of
                 {ok, Server} ->
@@ -28,11 +28,11 @@ connect() ->
 %% @spec connect(Node::node()) -> ok
 connect(Node) ->
     Name = droplast(io:get_line("Name?> ")),
-    LenName = string:len(Name),
-    if LenName > 15 ->
-	    io:fwrite("Your name is too long, please try again. ~n"),
+    case check_name(Name) of
+	{failed, Reason} ->
+	    io:fwrite("~s~n",[Reason]),
 	    connect(Node);
-       LenName =< 15 ->
+	ok ->
             Writer = spawn(fun writer/0),
             spawn(Node, client, remote, [self(), Name, Writer]),
             receive 
@@ -74,3 +74,10 @@ writer() ->
 droplast(L) ->
     lists:reverse(tl(lists:reverse(L))).
 
+check_name(Name) ->
+    case re:run(Name, "^[^ ]{1,15}$") of
+	{match, _} ->
+	    ok;
+	nomatch ->
+	    {failed, "Name is too long and/or contains spaces"}
+    end.
