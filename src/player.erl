@@ -167,6 +167,16 @@ handle_cast({command, Command},
 	    zone:say(Zone, self(), Message),
 	    {noreply, State};
 
+	{tell, Recipient, Message} ->
+	    case playermaster:tell(Recipient, Message, Data#player.name) of
+		ok ->
+		    Console ! {message, ["Message was sent to ", Recipient]},
+		    {noreply, State};
+		msg_failed ->
+		    Console ! {message, [Recipient, " seems to be offline"]},
+		    {noreply, State}
+	    end;
+
 	logout ->
 	    zone:logout(Zone, self()),
 	    playermaster:stop_player(Data#player.name),
@@ -188,9 +198,9 @@ handle_cast({command, Command},
 	{attack, NewTarget} ->
 	    if 
 		%%NewTarget =:= Data#player.name -> %%Ska man kunna attackera sig själv?
-		  %%  Console ! {message, "Are you trying to attack yourself?"},
-		   %% {noreply, State};
-		
+		%%  Console ! {message, "Are you trying to attack yourself?"},
+		%% {noreply, State};
+
 		Target =:= NewTarget ->
 		    Console ! {message, ["You are already attacking ", Target]},
 		    {noreply, State};
