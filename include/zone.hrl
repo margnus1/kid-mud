@@ -5,8 +5,6 @@
 -record(zone, {id, desc="", npc=[], items=[], exits=[]}).
 -type zone() :: #zone {id :: integer(), desc :: string(), npc :: [npc()], items :: [{integer(), integer()}], exits :: [exit()]}.
 
--record(npc, {id, name, disp=neutral, health={erlang:now(), 30.0, 30.0}, damage=3}).
--type npc() :: #npc {id :: integer(), name :: string(), disp :: helpful | neutral | hostile, health :: {erlang:timestamp(), float(), float()} , damage :: integer()}.
 
 -record(item, {id, name}).
 -type item() :: #item {id :: integer(), name :: string()}.

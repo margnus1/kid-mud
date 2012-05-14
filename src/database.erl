@@ -5,6 +5,7 @@
 -export([read_player/1, write_player/1, read_zone/1, write_zone/1, init/0, setup/0, create_tables/1]).
 -include("zone.hrl").
 -include("player.hrl").
+-include("npc.hrl").
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -49,6 +50,21 @@ write_zone(Zone) ->
     {atomic, ok} = mnesia:transaction(Trans),
     ok.
 
+%% @doc Reads the npc with id Id from database
+-spec read_npc(Id :: integer()) -> npc_not_found | npc().
+read_npc(Id) ->
+    Trans = fun () -> mnesia:read(npc, Id) end,
+    case mnesia:transaction(Trans) of
+	{atomic, [NPC]} -> NPC;
+	{atomic, []} -> npc_not_found
+    end.
+
+%% @doc Writes the npc NPC to database
+-spec write_npc(npc()) -> ok.
+write_npc(NPC) ->
+    Trans = fun () -> mnesia:write(npc, NPC, write) end,
+    {atomic, ok} = mnesia:transaction(Trans),
+    ok.		     
 
 %% @doc Starts the database
 %% @spec init() -> ok | {error, Reason}
@@ -70,6 +86,7 @@ setup() ->
 %% @end
 create_tables(Options) ->
     ok = create_table(player, Options, record_info(fields, player)),
+    ok = create_table(npc, Options, record_info(fields, npc)),
     ok = create_table(zone, Options, record_info(fields, zone)).
 
 create_table(Table, Options, Attributes) ->
@@ -95,12 +112,14 @@ test_setup() ->
     mnesia:start(),
     create_tables([]),
     mnesia:clear_table(player),
-    mnesia:clear_table(zone).
+    mnesia:clear_table(zone),
+    mnesia:clear_table(npc).
 
 %% @hidden
 database_test_() ->
     Korv = #player{name="Korv", location=2},
     Five = #zone{id=5, desc="asd"},
+    Korvgubbe = #npc{id=1232, name="Korvgubbe"},
     {setup, fun test_setup/0, 
      [fun() -> write_player(Korv),
                ?assertEqual(Korv, read_player("Korv")) end,
@@ -108,5 +127,7 @@ database_test_() ->
 	      #player{health=Health} = G = read_player("Gustav"),
 	      ?assertEqual(#player{name="Gustav", health=Health}, G) end,
       ?_assertEqual(zone_not_found, read_zone(0)),
-      fun() -> write_zone(Five),
-               ?assertEqual(read_zone(5), Five) end]}.
+      fun () -> write_zone(Five),
+		?assertEqual(Five, read_zone(5)) end,
+      fun () -> write_npc(Korvgubbe),
+		?assertEqual(Korvgubbe, read_npc(1232)) end]}.
