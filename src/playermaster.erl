@@ -14,7 +14,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start/0, start_player/2, stop_player/1, broadcast/1]).
+-export([start_link/0, start/0, start_player/2, stop_player/1, broadcast/1, tell/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -54,6 +54,16 @@ stop_player(Name) ->
 -spec broadcast(string()) -> ok.
 broadcast(Msg) ->
     gen_server:cast(?SERVER, {broadcast, Msg}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Sends a message to a specific player
+%% @end
+%%--------------------------------------------------------------------
+-spec tell(string(), string(), string()) -> ok.
+tell(Name, Msg, Sender) ->
+    gen_server:call(?SERVER, {tell, Name, Msg, Sender}).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -121,6 +131,14 @@ handle_call({start_player, Name, Console}, _From, PlayerList) ->
 	    {reply, {ok, PlayerPID}, [{PlayerPID, Name} | PlayerList]}
     end;
 
+handle_call({tell, Name, Msg, Sender}, _From, PlayerList) ->
+    case lists:keyfind(Name, 2,PlayerList) of
+	{Player, _} ->
+	    player:message(Player, [Sender," tells you \"" ,Msg, "\""]),
+	    {reply, ok, PlayerList};
+	false ->
+	    {reply, msg_failed, PlayerList}
+    end;   
 
 handle_call(Request, _From, State) ->
     io:fwrite("Unknown call to playermaster: ~p~n", [Request]),
@@ -209,3 +227,7 @@ broadcast_msg([], _) -> ok.
 %%%===================================================================
 %%% EUnit tests
 %%%===================================================================
+
+playermaster_test_() ->
+    [?_assertEqual({noreply, []}, handle_cast({stop_player, "Kurt"}, []))
+    ].
