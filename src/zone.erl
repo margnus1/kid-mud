@@ -371,12 +371,14 @@ handle_cast({attack, PlayerPID, Target, Damage},
 		    if Newhealth > 0.0 ->
 			    NPCs = lists:keyreplace(
 				     Npc#npc.id, 2, Data#zone.npc, 
-				     Npc#npc{health={now(), Newhealth}}),
+				     Npc#npc{health={now(), Newhealth, element(3, Npc#npc.health)}}),
 
 			    {noreply, {Players, Data#zone{npc=NPCs}}};
 		       Newhealth =< 0.0 ->    
 			    NPCs = lists:keydelete(Npc#npc.id, 2, Data#zone.npc),
-			    %% @todo TELL ALL OF MY MIGHT
+			    message_players(Players, message,
+					    [Npc#npc.name, 
+					     " has been killed!"]),
 			    {noreply, {Players, Data#zone{npc=NPCs}}}
 		    end
 	    end;
@@ -470,8 +472,8 @@ message_players([], _, _) -> ok.
 
 %% @doc Calculates the current health of a NPC
 -spec get_health(npc()) -> float().
-get_health(#npc{health={Time, Health}}) ->
-    min(Health + timer:now_diff(now(), Time) / 6000000.0, 100.0).
+get_health(#npc{health={Time, Health, MaxHealth}}) ->
+    min(Health + timer:now_diff(now(), Time) / 6000000.0, MaxHealth).
 
 %% @doc Finds the target with name Target
 -spec find_target(Target::string(), State::{[{pid(), string()}], zone()}) -> {player, pid()} | {npc, integer()} | false.
