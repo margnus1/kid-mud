@@ -229,5 +229,4 @@ broadcast_msg([], _) -> ok.
 %%%===================================================================
 
 playermaster_test_() ->
-    [?_assertEqual({noreply, []}, handle_cast({stop_player, "Kurt"}, []))
-    ].
+    [?_assertEqual({noreply, []}, handle_cast({stop_player, "Kurt"}, []))].
