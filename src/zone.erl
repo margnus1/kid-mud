@@ -379,6 +379,7 @@ handle_cast({attack, PlayerPID, Target, Damage},
 			    message_players(Players, message,
 					    [Npc#npc.name, 
 					     " has been killed!"]),
+			    message_players(Players, stop_attack, Name),
 			    {noreply, {Players, Data#zone{npc=NPCs}}}
 		    end
 	    end;
