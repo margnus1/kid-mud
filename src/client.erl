@@ -3,6 +3,7 @@
 
 -module(client).
 -export([connect/0, connect/1, remote/3]).
+-include_lib("eunit/include/eunit.hrl").
 
 %% @doc Starts a console session to the mud on this node
 %% @spec connect() -> ok
@@ -75,9 +76,33 @@ droplast(L) ->
     lists:reverse(tl(lists:reverse(L))).
 
 check_name(Name) ->
-    case re:run(Name, "^[^ ]{1,15}$") of
+    case re:run(Name, "^.{3,15}$") of
 	{match, _} ->
-	    ok;
+	    case re:run(Name, "^.[^ ]*$") of
+		{match, _} ->
+		    ok;
+		nomatch ->
+		    {failed, "Name cannot contain spaces"}
+	    end;
 	nomatch ->
-	    {failed, "Name is too long and/or contains spaces"}
+	    {failed, "Name must be 3-15 characters long"}
     end.
+
+
+
+%% EUnit tests
+
+client_test_() ->
+    [?_assertEqual("foo", droplast("foo\n")),
+     ?_assertEqual("", droplast("\n")),
+     ?_assertEqual({failed, "Name must be 3-15 characters long"},
+		   check_name("")),
+     ?_assertEqual({failed, "Name must be 3-15 characters long"},
+		   check_name("Bo")),
+     ?_assertEqual(ok,check_name("Bob")),
+     ?_assertEqual(ok, check_name("femton_tecken12")),
+     ?_assertEqual({failed, "Name must be 3-15 characters long"}, 
+		   check_name("sexton_tecken123")),
+     ?_assertEqual({failed, "Name cannot contain spaces"}, 
+		   check_name("My Key")),
+     ?_assertEqual(ok, check_name("MyKey"))].
