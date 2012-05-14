@@ -197,10 +197,9 @@ handle_cast({command, Command},
 
 	{attack, NewTarget} ->
 	    if 
-		%%NewTarget =:= Data#player.name -> %%Ska man kunna attackera sig själv?
-		%%  Console ! {message, "Are you trying to attack yourself?"},
-		%% {noreply, State};
-
+		NewTarget =:= Data#player.name ->
+		    Console ! {message, "You cannot attack yourself"},
+		    {noreply, State};
 		Target =:= NewTarget ->
 		    Console ! {message, ["You are already attacking ", Target]},
 		    {noreply, State};
