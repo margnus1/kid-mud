@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 -module(maploader).
@@ -80,12 +80,13 @@ droplast(L) ->
 %% @doc Insert the zones Zones into the database
 -spec write_zone(integer(), string(), exits()) -> ok.
 write_zone(Id, Desc, Exits) ->
+    Monster = #npc{id=Id, name="Ghost"},
     database:write_zone(
       case database:read_zone(Id) of
 	  zone_not_found ->
-	      #zone{id=Id, desc=Desc, exits=Exits};
+	      #zone{id=Id, desc=Desc, exits=Exits, npc=[Monster]};
 	  Zone ->
-	      Zone#zone{id=Id, desc=Desc, exits=Exits}
+	      Zone#zone{id=Id, desc=Desc, exits=Exits, npc=[Monster]}
       end).
  
 

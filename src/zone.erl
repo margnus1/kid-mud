@@ -212,11 +212,9 @@ handle_call({go, PlayerPID, Direction},
 		UpdatedPlayers ->
 		    Name = get_name(PlayerPID, Players),
 
-		    [player:message(
-		       PlayerPIDs, [Name, " has left ", 
-				    atom_to_list(Direction)]) || 
-			{PlayerPIDs,_} <- UpdatedPlayers],
-
+		    message_players(UpdatedPlayers, message,
+				    [Name, " has left ",
+				     atom_to_list(Direction)]),
 
 		    {reply, {ok, DirectionID}, {UpdatedPlayers, Data}}
 	    end
@@ -224,22 +222,15 @@ handle_call({go, PlayerPID, Direction},
 
 
 handle_call({validate_target, Target},
-	    _From, {Players, Data}) -> %%= #zone{npc=NPC}}) ->
+	    _From, State) ->
 
-    %% @todo make help function maybe
-
-    %%case lists:keyfind(Target, 2, NPC) of	
-    %%	{_,_,_,_,_} ->
-    %%	    {reply, valid_target, {Players, Data}};
-    %%	false ->
-    %%	    ok
-    %%    end,
-
-    case lists:keyfind(Target, 2, Players) of	
-	{_, _} ->
-	    {reply, valid_target, {Players, Data}};
+    case find_target(Target, State) of
+	{player, P} ->
+	    {reply, valid_target, State};
+	{npc, N} ->
+	    {reply, valid_target, State};
 	false ->
-	    {reply, no_target, {Players, Data}}
+	    {reply, no_target, State}
     end;
 
 
@@ -265,11 +256,7 @@ handle_cast({look, PlayerPID},
       PlayerPID, look_message(lists:keydelete(PlayerPID, 1, Players), Data)),
     player:message(PlayerPID, exits_message(Exits)),
 
-    %%Bara ett test, som inte funkade helt korrekt
-    %%NewNPC =  [#npc{id=random:uniform(100), 
-    %%		    name="ARNE", disp=aggressive} | NPC],
-
-    {noreply, {Players,Data}}; %%#zone{npc=NewNPC}}};
+    {noreply, {Players,Data}};
 
 
 handle_cast({enter, PlayerPID, Name, Direction}, 
@@ -277,9 +264,8 @@ handle_cast({enter, PlayerPID, Name, Direction},
     player:message(PlayerPID, look_message(Players, Data)),
     player:message(PlayerPID, exits_message(Exits)),
 
-    [player:message(
-       PlayerPIDs, [Name, format_arrival(Direction)] ) || 
-	{PlayerPIDs,_} <- Players],
+    message_players(Players, message, [Name, format_arrival(Direction)]),
+
 
     UpdatedPlayers = [{PlayerPID, Name} | Players],
 
@@ -293,11 +279,9 @@ handle_cast({logout, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	    {noreply,  {[], Data}};
 
 	UpdatedPlayers ->
-
-	    [player:message(
-	       PlayerPIDs, 
-	       [get_name(PlayerPID, Players), " has logged out"]) || 
-		{PlayerPIDs,_} <- UpdatedPlayers],
+	    message_players(
+	      UpdatedPlayers, message,
+	      [get_name(PlayerPID, Players), " has logged out"]),
 
 	    {noreply, {UpdatedPlayers, Data}}
     end;
@@ -319,11 +303,8 @@ handle_cast({kick, Name}, {Players, Data = #zone{id=Id}}) ->
 		    {noreply,  {[], Data}};
 
 		UpdatedPlayers ->
-
-		    [player:message(
-		       PlayerPIDs, 
-		       [Name, " has logged out"]) || 
-			{PlayerPIDs,_} <- UpdatedPlayers],
+		    message_players(
+		      UpdatedPlayers, message, [Name, " has logged out"]),
 
 		    {noreply, {UpdatedPlayers, Data}}
 	    end;
@@ -334,32 +315,19 @@ handle_cast({kick, Name}, {Players, Data = #zone{id=Id}}) ->
 
 
 handle_cast({attack, PlayerPID, Target, Damage}, 
-	    State = {Players, Data}) -> %% = #zone{npc=NPC}}) ->
+	    State = {Players, Data}) -> 
 
     Name = get_name(PlayerPID, Players),
 
-    %% @todo Add NPC combat
-    %%case lists:keyfind(Target, 3, NPC) of	
-    %%	NPCtarget ->
-    %%	    player:message(PlayerPID,"You!!!!!!!!!!!!!"),
-    %%	    {noreply, State};
-    %%	false ->
-    %%	    ok
-    %%   end,
-
-    %% Player VS Player combat
-    case lists:keyfind(Target, 2, Players) of	
-	{TargetPID, _} ->
+    case find_target(Target, State) of 
+	{player, TargetPID} ->
 	    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
 	    Rest =  lists:keydelete(TargetPID, 1, OtherPlayers),
-	    %% Om man slår sig själv får man 2 meddelanden, fixa?
 	    case Damage of 
 		miss ->
-		    [player:message(
-		       PlayerPIDs, 
-		       io_lib:format("~s misses ~s",
-				     [Name, Target])) || 
-			{PlayerPIDs,_} <- Rest],
+		    message_players(
+		      Rest, message, io_lib:format("~s misses ~s",
+						   [Name, Target])),
 
 		    player:message(PlayerPID, 
 				   ["You miss your attack on ", Target]),
@@ -367,11 +335,9 @@ handle_cast({attack, PlayerPID, Target, Damage},
 				   [Name, " misses his attack on YOU"]),
 		    {noreply, State};
 		Damage -> 
-		    [player:message(
-		       PlayerPIDs, 
-		       io_lib:format("~s hits ~s for ~p",
-				     [Name, Target, Damage])) || 
-			{PlayerPIDs,_} <- Rest],
+		    message_players(
+		      Rest, message, io_lib:format("~s hits ~s for ~p",
+						   [Name, Target, Damage])),
 
 		    player:message(
 		      PlayerPID, io_lib:format(
@@ -380,10 +346,44 @@ handle_cast({attack, PlayerPID, Target, Damage},
 		    player:damage(TargetPID, Damage, Name),
 		    {noreply, State}
 	    end;
+	{npc, Npc} ->
+	    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
+	    case Damage of 
+		miss ->
+		    message_players(
+		      OtherPlayers, message, io_lib:format("~s misses ~s",
+							   [Name, Target])),
+		    player:message(PlayerPID, 
+				   ["You miss your attack on ", Target]),
+		    {noreply, State};
+
+		Damage ->
+		    message_players(
+		      OtherPlayers,
+		      message, io_lib:format("~s hits ~s for ~p",
+					     [Name, Target, Damage])),
+
+		    player:message(
+		      PlayerPID, io_lib:format(
+				   "You hit ~s for ~p", [Target, Damage])),
+
+		    Newhealth = get_health(Npc) - Damage,
+		    if Newhealth > 0.0 ->
+			    NPCs = lists:keyreplace(
+				     Npc#npc.id, 2, Data#zone.npc, 
+				     Npc#npc{health={now(), Newhealth}}),
+
+			    {noreply, {Players, Data#zone{npc=NPCs}}};
+		       Newhealth =< 0.0 ->    
+			    NPCs = lists:keydelete(Npc#npc.id, 2, Data#zone.npc),
+			    %% @todo TELL ALL OF MY MIGHT
+			    {noreply, {Players, Data#zone{npc=NPCs}}}
+		    end
+	    end;
 
 	false ->
 	    player:stop_attack(PlayerPID, Target),
-	    {noreply, State} 
+	    {noreply, State}
     end;
 
 
@@ -398,8 +398,7 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	UpdatedPlayers ->
 	    playermaster:broadcast([Name, " has been slain!"]),
 
-	    [player:stop_attack(
-	       PlayerPIDs, Name) || {PlayerPIDs,_} <- Players],
+	    message_players(Players, stop_attack, Name),
 
 	    {noreply, {UpdatedPlayers, Data}}
     end;
@@ -408,9 +407,8 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 handle_cast({say, PlayerPID, Message}, State={Players,_}) ->
     Name = get_name(PlayerPID, Players),
 
-    [player:message(
-       PlayerPIDs, 
-       [Name, " says \"", Message, "\""]) || {PlayerPIDs,_} <- Players],
+    message_players(Players, message, [Name, " says \"", Message, "\""]),
+
     {noreply, State};
 
 
@@ -464,14 +462,39 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% @doc Sends a message to all the players in the zone
+message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
+    player:Notice(PlayerPID, Arg1),
+    message_players(Rest, Notice, Arg1);
+message_players([], _, _) -> ok.
+
+%% @doc Calculates the current health of a NPC
+-spec get_health(npc()) -> float().
+get_health(#npc{health={Time, Health}}) ->
+    min(Health + timer:now_diff(now(), Time) / 6000000.0, 100.0).
+
+%% @doc Finds the target with name Target
+-spec find_target(Target::string(), State::{[{pid(), string()}], zone()}) -> {player, pid()} | {npc, integer()} | false.
+find_target(Target, {Players, Data = #zone{npc=NPC}}) ->
+    case lists:keyfind(Target, 3, NPC) of
+	false ->
+	    case lists:keyfind(Target, 2, Players) of	
+		false ->
+		    false;
+		{Pid, _} ->
+		    {player, Pid}
+	    end;
+	NpcTarget ->
+    	    {npc, NpcTarget}
+    end.
+
 %% @doc Constructs a "look" message
--spec look_message(Players::[player()], Zone::zone()) -> string().
+-spec look_message(Players::[{pid(), string()}], Zone::zone()) -> string().
 
 look_message(Players, Zone) ->
     [Zone#zone.desc,
-     %%lists:map(fun(NPC) -> ["\n", "Here stand a ", 
-     %%			    NPC#npc.name, ":", atom_to_list(NPC#npc.disp)] end,
-     %%	       Zone#zone.npc),
+     lists:map(fun(NPC) -> ["\n", "Here stand a ", NPC#npc.name] end,
+     	       Zone#zone.npc),
      colour:text(blue, lists:map(fun({_, Name}) -> 
 					 ["\n", "Here stands ", Name] end,
 				 Players))]. %% ++
@@ -510,7 +533,6 @@ format_arrival(login) -> " logged in".
 %%%===================================================================
 %%% EUnit Tests
 %%%===================================================================
-
 
 test_setup() ->
     database_setup(),

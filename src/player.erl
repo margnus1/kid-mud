@@ -313,7 +313,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 get_health(#player{health={Time, Health}}) ->
-    min(Health + timer:now_diff(now(), Time) / 6000000.0, 100).
+    min(Health + timer:now_diff(now(), Time) / 6000000.0, 100.0).
 
 %%%===================================================================
 %%% EUnit Tests
@@ -364,7 +364,7 @@ player_test_() ->
 	      flush()
       end, 
       ?_assertEqual(handle_cast("test", state), {noreply, state}),
-      ?_assertEqual(get_health(#player{name = "foo"}), 100),
+      ?_assertEqual(get_health(#player{name = "foo"}), 100.0),
       fun () ->
 	      %% requires some of the other modules to work properly
 	      %% Test for handle_cast({command, "go north"}, 
