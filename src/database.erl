@@ -67,17 +67,17 @@ write_npc(NPC) ->
     {atomic, ok} = mnesia:transaction(Trans),
     ok.		     
 
-%% @doc Finds all npc that match the level and habitat requirement.
+%% @doc Finds the id of all npc that match the level and habitat requirement.
 %%      The level must be in the range [FromLevel, ToLevel] and the
 %%      habitat must be Habitat.
 %% @end
--spec find_npc({integer(), integer()}, habitat()) -> npc().
+-spec find_npc({integer(), integer()}, habitat()) -> integer().
 find_npc({FromLevel, ToLevel}, Habitat) ->
     Trans = fun() -> 
-		    MatchHead = #npc{level='$1', habitat=Habitat, _='_'},
-		    LowGuard = {'>', '$1', FromLevel-1},
-		    HighGuard = {'<', '$1', ToLevel+1},
-		    mnesia:select(npc, [{MatchHead, [LowGuard, HighGuard], ['$_']}])
+		    MatchHead = #npc{id='$1', level='$2', habitat=Habitat, _='_'},
+		    LowGuard = {'>', '$2', FromLevel-1},
+		    HighGuard = {'<', '$2', ToLevel+1},
+		    mnesia:select(npc, [{MatchHead, [LowGuard, HighGuard], ['$1']}])
 	    end,
     {atomic, Result} = mnesia:transaction(Trans),
     Result.
@@ -152,6 +152,6 @@ database_test_() ->
 		?assertEqual(Korvgubbe, read_npc(1232)) end,
       fun () -> write_npc(Staalmannen),
 		write_npc(Crab),
-	        ?assertEqual([Korvgubbe], find_npc({2,4}, forest)) end,
-		?_assertEqual([Korvgubbe, Staalmannen], find_npc({2,5}, forest)),
-		?_assertEqual([Crab], find_npc({1,2}, beach))]}.
+	        ?assertEqual([1232], find_npc({2,4}, forest)) end,
+		?_assertEqual([1232, 1233], find_npc({2,5}, forest)),
+		?_assertEqual([1234], find_npc({1,2}, beach))]}.
