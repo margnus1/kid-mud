@@ -79,7 +79,7 @@ player_enter(Npc, Name) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Zone, Id]) ->
+init([Id, Zone]) ->
     Data = database:read_npc(Id),
     {ok, {Zone, Data, {normal, none, none}}}.
 
