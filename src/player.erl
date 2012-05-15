@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus L�ng, Mikael Wiberg and Michael Bergroth, Eric Arnerl�v
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -11,6 +11,7 @@
 -module(player).
 -include("player.hrl").
 -include("zone.hrl").
+-include("npc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
@@ -145,7 +146,8 @@ handle_call(Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({command, Command}, 
-	    State = {Console, Zone, Data, CombatState = {_, Target, AttackTimer}}) ->
+	    State = {Console, Zone, Data, 
+		     CombatState = {_, Target, AttackTimer}}) ->
     case parser:parse(Command) of
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
@@ -156,7 +158,8 @@ handle_cast({command, Command},
 		    NewZone = zonemaster:get_zone(Id),
 		    zone:enter(NewZone, self(), Data#player.name, Direction),
 		    timer:cancel(AttackTimer),
-		    {noreply, {Console, NewZone, Data#player{location=Id}, {normal, none, none}}};
+		    {noreply, {Console, NewZone, Data#player{location=Id},
+			       {normal, none, none}}};
 
 		{error, doesnt_exist} ->
 		    Console ! {message, "You cannot go that way"},
@@ -207,13 +210,17 @@ handle_cast({command, Command},
 		    case zone:validate_target(Zone, NewTarget) of
 			no_target ->
 			    Console ! {message,
-				       ["Can't find any \"", NewTarget, "\" here"] },
+				       ["Can't find any \"", 
+					NewTarget, "\" here"] },
 			    {noreply, State};
 			valid_target ->
 			    Console ! {message, 
 				       ["You are now attacking ", NewTarget]},
 			    timer:cancel(AttackTimer),
-			    {_,NewAttackTimer} = timer:send_interval(2000, {'$gen_cast',{attack, NewTarget}}),
+			    {_,NewAttackTimer} = 
+				timer:send_interval(2000, {'$gen_cast',
+							   {attack, 
+							    NewTarget}}),
 			    {noreply, {Console, Zone, Data, 
 				       {combat, NewTarget, NewAttackTimer}}}
 		    end
@@ -270,7 +277,8 @@ handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
 	    zone:death(Zone, self()),
 	    %% Player dies permanently
 	    playermaster:stop_player(Data#player.name),
-	    {noreply, {Console, Zone, #player{name = Data#player.name}, CombatState}}
+	    {noreply, {Console, Zone, #player{name = Data#player.name}, 
+		       CombatState}}
     end;
 
 handle_cast(Msg, State) ->
@@ -350,7 +358,8 @@ player_test_() ->
     {setup, fun test_setup/0, 
      [
       fun () ->		  
-	      ?assertEqual(handle_cast({message, "foo"}, {self(),what,ever,ever}),
+	      ?assertEqual(handle_cast({message, "foo"}, 
+				       {self(),what,ever,ever}),
 			   {noreply, {self(),what,ever,ever}}),
 	      ?assertEqual({message, "foo"}, fetch()),
 	      flush()
@@ -363,11 +372,15 @@ player_test_() ->
 	      flush()
       end,
       fun () ->
-	      %% Test for handle_cast({damage, integer(), string()}, {pid(),pid(),player()}
+	      %% Test for handle_cast({damage, integer(), string()},
+	      %%                      {pid(),pid(),player()}
 	      Data = #player{name = "Pontus"},
-	      NewData = element(3, element(2, handle_cast({damage, 20, "hanna"}, {self(), self(), Data, ever}))),
+	      NewData = element(3, element(2,handle_cast({damage, 20, "hanna"},
+							 {self(), self(), 
+							  Data, ever}))),
 	      ?assertEqual(round(element(2, NewData#player.health)), 80),
-	      ?assertEqual({message, ["hanna"," hits YOU for damage: ","20"]}, fetch()),
+	      ?assertEqual({message, ["hanna"," hits YOU for damage: ","20"]},
+			   fetch()),
 	      ControlData = NewData#player{health = Data#player.health},
 	      ?assertEqual(Data, ControlData),
 	      flush()
@@ -385,8 +398,12 @@ player_test_() ->
 	      Data = #player{name = "foo"},
 	      Zone = zonemaster:get_zone(Data#player.location),
 	      zone:enter(Zone, self(), "foo", login),
-	      ?assertEqual({noreply, {self(), zonemaster:get_zone(1), #player{name="foo",location=1, health=Data#player.health},{normal,none,none}}}, 
-			   handle_cast({command, "go north"}, {self(), Zone, Data, {normal,none,none}})
+	      ?assertEqual({noreply, {self(), zonemaster:get_zone(1), 
+				      #player{name="foo",location=1, 
+					      health=Data#player.health},
+				      {normal,none,none}}}, 
+			   handle_cast({command, "go north"}, 
+				       {self(), Zone, Data, {normal,none,none}})
 			  ),
 	      fetch(),
 	      fetch(),
