@@ -57,7 +57,7 @@ stop_attack(Npc, Target) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% If NPC attacks Target, NPC stops attacking
+%% Attack entering player if NPC is hostile and not in combat already
 %% @end
 %%--------------------------------------------------------------------
 -spec player_enter(pid(), string()) -> ok.
