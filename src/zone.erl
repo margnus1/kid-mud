@@ -178,6 +178,14 @@ say(Zone, PlayerPID, Message) ->
 %%--------------------------------------------------------------------
 init([Id]) ->
     Data = database:read_zone(Id),
+    %% @todo make dead things come back to life
+    
+    %% @todo add NPC to STATE
+    
+    %% NPC = []
+    
+    %% spawn with supervisor
+    
     Players = [],
     {ok, {Players, Data}}.
 
@@ -316,6 +324,7 @@ handle_cast({kick, Name}, {Players, Data = #zone{id=Id}}) ->
 
 handle_cast({attack, PlayerPID, Target, Damage}, 
 	    State = {Players, Data = #zone{npc=NPC}}) -> 
+    %% @todo make attack npc friendly. PlayerPID=PID och alla player:message? 
 
     {_,Name} = get_name(PlayerPID, Players,NPC),
 
@@ -494,8 +503,8 @@ find_target(Target, {Players, #zone{npc=NPC}}) ->
 
 look_message(Players, Zone) ->
     [Zone#zone.desc,
-     %%lists:map(fun(NPC) -> ["\n", "Here stand a ", NPC#npc.name] end,
-     %%	       Zone#zone.npc),
+     lists:map(fun(NPC) -> ["\n", "Here stand a ", NPC#npc.name] end,
+     	       Zone#zone.npc),
      colour:text(blue, lists:map(fun({_, Name}) -> 
 					 ["\n", "Here stands ", Name] end,
 				 Players))]. %% ++

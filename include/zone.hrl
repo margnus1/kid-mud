@@ -3,7 +3,7 @@
 
 -type exit() :: {Direction :: north | east | south | west, Id :: integer()}.
 -record(zone, {id, desc="", npc=[], items=[], exits=[]}).
--type zone() :: #zone {id :: integer(), desc :: string(), npc :: [npc()], items :: [{integer(), integer()}], exits :: [exit()]}.
+-type zone() :: #zone {id :: integer(), desc :: string(), npc :: [integer()], items :: [{integer(), integer()}], exits :: [exit()]}.
 
 
 -record(item, {id, name}).
