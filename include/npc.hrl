@@ -1,4 +1,24 @@
 %% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
--record(npc, {id, name, disp=neutral, health={erlang:now(), 30.0, 30.0}, damage=3}).
--type npc() :: #npc {id :: integer(), name :: string(), disp :: helpful | neutral | hostile, health :: {erlang:timestamp(), float(), float()} , damage :: integer()}.
+
+-record(npc, {id, 
+	      name, 
+	      disp=neutral, 
+	      health={erlang:now(), 30.0, 30.0}, 
+	      damage=3, 
+	      attack_speed=1.0,
+	      level=1, 
+	      habitat=forest}).
+
+-type habitat() :: beach | forest | cave | road.
+-type disposition() :: helpful | neutral | hostile.
+-type npc_health() :: {erlang:timestamp(), float(), float()}.
+
+-type npc() :: #npc {id :: integer(), 
+		     name :: string(), 
+		     disp :: disposition(),
+		     health :: npc_health(),
+		     damage :: integer(),
+                     attack_speed :: float(),
+		     level :: integer(),
+		     habitat :: habitat()}.

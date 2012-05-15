@@ -1,8 +1,9 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 -module(database).
--export([read_player/1, write_player/1, read_zone/1, write_zone/1, init/0, setup/0, create_tables/1]).
+-export([read_player/1, write_player/1, read_zone/1, write_zone/1, read_npc/1,
+	 write_npc/1, find_npc/2, init/0, setup/0, create_tables/1]).
 -include("zone.hrl").
 -include("player.hrl").
 -include("npc.hrl").
@@ -66,6 +67,22 @@ write_npc(NPC) ->
     {atomic, ok} = mnesia:transaction(Trans),
     ok.		     
 
+%% @doc Finds the id of all npc that match the level and habitat requirement.
+%%      The level must be in the range [FromLevel, ToLevel] and the
+%%      habitat must be Habitat.
+%% @end
+-spec find_npc({integer(), integer()}, habitat()) -> integer().
+find_npc({FromLevel, ToLevel}, Habitat) ->
+    Trans = fun() -> 
+		    MatchHead = #npc{id='$1', level='$2', habitat=Habitat, _='_'},
+		    LowGuard = {'>', '$2', FromLevel-1},
+		    HighGuard = {'<', '$2', ToLevel+1},
+		    mnesia:select(npc, [{MatchHead, [LowGuard, HighGuard], ['$1']}])
+	    end,
+    {atomic, Result} = mnesia:transaction(Trans),
+    Result.
+
+
 %% @doc Starts the database
 %% @spec init() -> ok | {error, Reason}
 init() ->
@@ -119,7 +136,9 @@ test_setup() ->
 database_test_() ->
     Korv = #player{name="Korv", location=2},
     Five = #zone{id=5, desc="asd"},
-    Korvgubbe = #npc{id=1232, name="Korvgubbe"},
+    Korvgubbe = #npc{id=1232, name="Korvgubbe", level=2, habitat=forest},
+    Staalmannen = #npc{id=1233, name="Staalmannen", level=5, habitat=forest},
+    Crab = #npc{id=1234, name="Crab", level=2, habitat=beach},
     {setup, fun test_setup/0, 
      [fun() -> write_player(Korv),
                ?assertEqual(Korv, read_player("Korv")) end,
@@ -130,4 +149,9 @@ database_test_() ->
       fun () -> write_zone(Five),
 		?assertEqual(Five, read_zone(5)) end,
       fun () -> write_npc(Korvgubbe),
-		?assertEqual(Korvgubbe, read_npc(1232)) end]}.
+		?assertEqual(Korvgubbe, read_npc(1232)) end,
+      fun () -> write_npc(Staalmannen),
+		write_npc(Crab),
+	        ?assertEqual([1232], find_npc({2,4}, forest)) end,
+		?_assertEqual([1232, 1233], find_npc({2,5}, forest)),
+		?_assertEqual([1234], find_npc({1,2}, beach))]}.
