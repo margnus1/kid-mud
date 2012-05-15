@@ -10,6 +10,7 @@
 %%%-------------------------------------------------------------------
 -module(zone).
 -include("zone.hrl").
+-include("npc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
@@ -266,7 +267,6 @@ handle_cast({enter, PlayerPID, Name, Direction},
 
     message_players(Players, message, [Name, format_arrival(Direction)]),
 
-
     UpdatedPlayers = [{PlayerPID, Name} | Players],
 
     {noreply, {UpdatedPlayers, Data}};
@@ -349,8 +349,6 @@ handle_cast({attack, PlayerPID, Target, Damage},
 	{npc, Npc} ->
 	    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
 
-	  
-
 	    case Damage of 
 		miss ->
 		    message_players(
@@ -411,6 +409,7 @@ handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	    message_players(Players, stop_attack, Name),
 
 	    {noreply, {UpdatedPlayers, Data}}
+
     end;
 
 
@@ -420,12 +419,6 @@ handle_cast({say, PlayerPID, Message}, State={Players,_}) ->
     message_players(Players, message, [Name, " says \"", Message, "\""]),
 
     {noreply, State};
-
-
-%%handle_cast({npc_attack, , }, State={Players,_}) ->
-
-
-%%  {noreply, State};
 
 
 handle_cast(Msg, State) ->
