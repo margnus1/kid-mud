@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------

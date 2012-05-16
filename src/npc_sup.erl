@@ -1,19 +1,17 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
-%% See the file license.txt for copying permission.
-
 %%%-------------------------------------------------------------------
-%%% @author Magnus Lång <mala7837@beurling.it.uu.se>
+%%% @author Magnus Lang <mala7837@fries.it.uu.se>
+%%% @copyright (C) 2012, Magnus Lang
 %%% @doc
-%%%      Main supervisor for the Kid-MUD server
+%%%
 %%% @end
-%%% Created :  9 May 2012 by Magnus Lång <mala7837@beurling.it.uu.se>
+%%% Created : 15 May 2012 by Magnus Lang <mala7837@fries.it.uu.se>
 %%%-------------------------------------------------------------------
--module(master_supervisor).
+-module(npc_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start/0]).
+-export([start_link/0, start_npc/2, stop_npc/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -26,15 +24,28 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts the supervisor without a link.
-%% To be used from shell when debugging only.
-%% @spec start() -> {ok, Pid} | ignore | {error, Error}
+%% Starts a npc of type Id attached to zone ZonePID
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    {ok, Pid} = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
-    unlink(Pid).
+-spec start_npc(integer(), pid()) -> pid() | {error, term()}.
+start_npc(Id, ZonePID) ->
+    Reference = make_ref(),
+    Child = {{npc, Reference}, {npc, start_link, [Id, ZonePID, Reference]},
+	     permanent, 2000, worker, [npc]},
+    case supervisor:start_child(?SERVER, Child) of
+	{ok, Pid} -> Pid;	  
+	{ok, Pid, _} -> Pid;
+	{error, Info} -> {error, Info}
+    end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Stops the npc with reference Reference
+%% @end
+%%--------------------------------------------------------------------
+stop_npc(Reference) ->
+    supervisor:terminate_child(?SERVER, {npc, Reference}),
+    supervisor:delete_child(?SERVER, {npc, Reference}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -70,26 +81,7 @@ init([]) ->
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-    Restart = permanent,
-    Shutdown = 2000, % timeout
-
-    PlayerMaster = {"Player Master", {playermaster, start_link, []},
-		   Restart, Shutdown, worker, [playermaster]}, 
-
-    PlayerSup = {"Player Supervisor", {player_sup, start_link, []},
-	       Restart, Shutdown, supervisor, [player_sup]},
-
-    ZoneMaster = {"Zone Master", {zonemaster, start_link, []},
-		  Restart, Shutdown, worker, [zonemaster]},
-
-    ZoneSup = {"Zone Supervisor", {zone_sup, start_link, []},
-	       Restart, Shutdown, supervisor, [zone_sup]},
-
-    NpcSup = {"NPC Supervisor", {npc_sup, start_link, []},
-	      Restart, Shutdown, supervisor, [npc_sup]},
-
-    {ok, {SupFlags, [PlayerMaster, PlayerSup, ZoneMaster,
-		     ZoneSup, NpcSup]}}.
+    {ok, {SupFlags, []}}.
 
 %%%===================================================================
 %%% Internal functions
