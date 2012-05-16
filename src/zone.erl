@@ -178,6 +178,14 @@ say(Zone, PlayerPID, Message) ->
 %%--------------------------------------------------------------------
 init([Id]) ->
     Data = database:read_zone(Id),
+    %% @todo make dead things come back to life
+    
+    %% @todo add NPC to STATE
+    
+    %% NPC = []
+    
+    %% spawn with supervisor
+    
     Players = [],
     {ok, {Players, Data}}.
 
@@ -211,7 +219,7 @@ handle_call({go, PlayerPID, Direction},
 		    {reply, {ok, DirectionID}, {[], Data}};
 
 		UpdatedPlayers ->
-		    Name = get_name(PlayerPID, Players),
+		    Name = get_player_name(PlayerPID, Players),
 
 		    message_players(UpdatedPlayers, message,
 				    [Name, " has left ",
@@ -281,7 +289,7 @@ handle_cast({logout, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
 	UpdatedPlayers ->
 	    message_players(
 	      UpdatedPlayers, message,
-	      [get_name(PlayerPID, Players), " has logged out"]),
+	      [get_player_name(PlayerPID, Players), " has logged out"]),
 
 	    {noreply, {UpdatedPlayers, Data}}
     end;
@@ -315,9 +323,10 @@ handle_cast({kick, Name}, {Players, Data = #zone{id=Id}}) ->
 
 
 handle_cast({attack, PlayerPID, Target, Damage}, 
-	    State = {Players, Data}) -> 
+	    State = {Players, Data = #zone{npc=NPC}}) -> 
+    %% @todo make attack npc friendly. PlayerPID=PID och alla player:message? 
 
-    Name = get_name(PlayerPID, Players),
+    {_,Name} = get_name(PlayerPID, Players,NPC),
 
     case find_target(Target, State) of 
 	{player, TargetPID} ->
@@ -368,25 +377,7 @@ handle_cast({attack, PlayerPID, Target, Damage},
 		      PlayerPID, io_lib:format(
 				   "You hit ~s for ~p", [Target, Damage])),
 
-		    Newhealth = get_health(Npc) - Damage,
-		    if Newhealth > 0.0 ->
-			    NPCs = lists:keyreplace(
-				     Npc#npc.id, 2, Data#zone.npc, 
-				     Npc#npc{
-				       health={now(), 
-					       Newhealth, 
-					       element(3, Npc#npc.health)}}),
-
-			    {noreply, {Players, Data#zone{npc=NPCs}}};
-		       Newhealth =< 0.0 ->    
-			    NPCs = lists:keydelete(Npc#npc.id, 2, 
-						   Data#zone.npc),
-			    message_players(Players, message,
-					    [Npc#npc.name, 
-					     " has been killed!"]),
-			    message_players(Players, stop_attack, Npc#npc.name),
-			    {noreply, {Players, Data#zone{npc=NPCs}}}
-		    end
+		    {noreply, {Players, Data}}
 	    end;
 
 	false ->
@@ -395,26 +386,39 @@ handle_cast({attack, PlayerPID, Target, Damage},
     end;
 
 
-handle_cast({death, PlayerPID}, {Players, Data = #zone{id=Id}}) ->
-    Name = get_name(PlayerPID, Players), 
+handle_cast({death, PID}, State = {Players, Data = #zone{id=Id,npc=NPC}}) ->
 
-    case lists:keydelete(PlayerPID, 1, Players) of
-	[] ->
-	    zonemaster:zone_inactive(Id),
-	    {noreply,  {[], Data}};
+    {_,Name} = get_name(PID, Players, NPC),
 
-	UpdatedPlayers ->
-	    playermaster:broadcast([Name, " has been slain!"]),
+    case find_target(Name, State) of 
+	{player, TargetPID} ->
+	    case lists:keydelete(PID, 1, Players) of
+		[] ->
+		    zonemaster:zone_inactive(Id),
+		    {noreply,  {[], Data}};
 
-	    message_players(Players, stop_attack, Name),
+		UpdatedPlayers ->
+		    playermaster:broadcast([Name, " has been slain!"]),
 
-	    {noreply, {UpdatedPlayers, Data}}
+		    message_players(UpdatedPlayers, stop_attack, Name),
+
+		    {noreply, {UpdatedPlayers, Data}}
+	    end;
+
+	{npc, Npc} ->
+
+	    lists:keydelete(PID, 1, NPC),
+
+	    message_players(
+	      Players, message, [Name, "has been killed!"]),
+
+	    {noreply, {Players, Data}}
 
     end;
 
 
 handle_cast({say, PlayerPID, Message}, State={Players,_}) ->
-    Name = get_name(PlayerPID, Players),
+    Name = get_player_name(PlayerPID, Players),
 
     message_players(Players, message, [Name, " says \"", Message, "\""]),
 
@@ -477,13 +481,10 @@ message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
     message_players(Rest, Notice, Arg1);
 message_players([], _, _) -> ok.
 
-%% @doc Calculates the current health of a NPC
--spec get_health(npc()) -> float().
-get_health(#npc{health={Time, Health, MaxHealth}}) ->
-    min(Health + timer:now_diff(now(), Time) / 6000000.0, MaxHealth).
-
 %% @doc Finds the target with name Target
--spec find_target(Target::string(), State::{[{pid(), string()}], zone()}) -> {player, pid()} | {npc, integer()} | false.
+-spec find_target(Target::string(), 
+		  State::{[{pid(), string()}], zone()}) -> 
+			 {player, pid()} | {npc, integer()} | false.
 find_target(Target, {Players, #zone{npc=NPC}}) ->
     case lists:keyfind(Target, 3, NPC) of
 	false ->
@@ -527,9 +528,24 @@ exits_message(Exits) ->
        lists:map(fun ({Dir, _}) -> atom_to_list(Dir) end, Exits), ", ")].
 
 %% @doc Gets the name of the player with PID Player from player list Players
-get_name(PlayerPID, Players) ->
+get_player_name(PlayerPID, Players) ->
     {_, Name} = lists:keyfind(PlayerPID, 1, Players), 
     Name.
+
+%% @doc Gets the name of the player or NPC 
+%% with PID from player list Players or NPC list
+%% @end
+get_name(PlayerPID, Players, NPC) ->
+    case lists:keyfind(PlayerPID, 1, Players) of
+	false ->
+	    case lists:keyfind(PlayerPID, 1, NPC) of
+		Name -> 
+		    Name
+	    end;
+	Name ->
+	    Name
+    end.
+
 
 %% @doc Constructs a "arrival" message
 format_arrival(north) -> " arrives from south";
@@ -727,20 +743,20 @@ zone_attack_test_() ->
      end,
 
      fun () ->
-	     handle_cast({attack, self(), "Ghost", 100}, 
+	     handle_cast({attack, self(), "Ghost", 10}, 
 			 {[{self(),"Kurt"},{self(),"Gunnar"}],
-			  #zone{id=5, exits=[], npc=[{npc,1,"Ghost", neutral,{erlang:now(), 5.0, 30.0}, 3}]}}),
+			  #zone{id=5, exits=[], npc=[{npc,1,"Ghost", neutral,{erlang:now(), 30.0, 30.0}, 3}]}}),
 
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Kurt hits Ghost for 100", lists:flatten(Message)),
+	     ?assertEqual("Kurt hits Ghost for 10", lists:flatten(Message)),
 	     {'$gen_cast', {message, Message2}} = fetch(),
-	     ?assertEqual("You hit Ghost for 100", lists:flatten(Message2)),
-	     {'$gen_cast', {message, Message3}} = fetch(),
-	     ?assertEqual("Ghost has been killed!", lists:flatten(Message3)),
-	     {'$gen_cast', {message, Message4}} = fetch(),
-	     ?assertEqual("Ghost has been killed!", lists:flatten(Message4)),
-	     ?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch()),
-	     ?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
+	     ?assertEqual("You hit Ghost for 10", lists:flatten(Message2))
+	     %%{'$gen_cast', {message, Message3}} = fetch()
+	     %%?assertEqual("Ghost has been killed!", lists:flatten(Message3)),
+	     %%{'$gen_cast', {message, Message4}} = fetch(),
+	     %%?assertEqual("Ghost has been killed!", lists:flatten(Message4)),
+	     %%?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
+	     %%?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
      end,
 
      fun () ->
