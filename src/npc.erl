@@ -10,18 +10,17 @@
 %%%-------------------------------------------------------------------
 -module(npc).
 -include("npc.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, damage/3, stop_attack/2, player_enter/2]).
+-export([start_link/3, get_ref/1, damage/3, stop_attack/2, player_enter/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
-
--record(state, {}).
 
 %%%===================================================================
 %%% API
@@ -34,8 +33,17 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(Id, Zone, Ref) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Id, Zone, Ref], []).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Sends the NPCs reference as a reply
+%% @end
+%%--------------------------------------------------------------------
+-spec get_ref(pid()) -> ok.
+get_ref(Npc) ->
+    gen_server:call(Npc, get_ref).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -79,9 +87,9 @@ player_enter(Npc, Name) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Id, Zone]) ->
+init([Id, Zone, Ref]) ->
     Data = database:read_npc(Id),
-    {ok, {Zone, Data, {normal, none, none}}}.
+    {ok, {Ref, Zone, Data, {normal, none, none}}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -97,9 +105,9 @@ init([Id, Zone]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+handle_call(get_ref, _From, State =
+	   {Ref, _Zone, _Data, _CombatState}) ->
+    {reply, Ref, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -112,7 +120,7 @@ handle_call(_Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({damage, Damage, Attacker}, State = 
-		{Zone, Data, {NpcStatus, Target, AttackTimer}}) ->
+		{Ref, Zone, Data, {NpcStatus, _Target, _AttackTimer}}) ->
     NewData = Data#npc{health={erlang:now(),
 			       get_health(Data) - Damage,
 			       element(3, Data#npc.health)}},
@@ -124,8 +132,7 @@ handle_cast({damage, Damage, Attacker}, State =
 		    {_, NewAttackTimer} = 
 			timer:send_interval(2000, {'$gen_cast', 
 						   {attack, Attacker}}),
-
-		    {noreply, {Zone, NewData, {combat, Attacker, 
+		    {noreply, {Ref, Zone, NewData, {combat, Attacker, 
 					       NewAttackTimer}}};
 		NpcStatus =:= combat ->
 		    {noreply, State}
@@ -135,36 +142,34 @@ handle_cast({damage, Damage, Attacker}, State =
 	    {noreply, State}
     end;
 
-handle_cast({attack, NewTarget}, 
-	    {Zone, Data, {NpcStatus, Target, AttackTimer}}) ->
-
+handle_cast({attack, NewTarget}, State =  
+	    {_Ref, Zone, _Data, _CombatState}) ->
     ToHit = random:uniform(100),
     if ToHit > 20 ->
 	    Damage = 4 + random:uniform(6);
        ToHit =< 20 -> 
 	    Damage = miss
     end,
-
     zone:attack(Zone, self(), NewTarget, Damage),
-    {noreply, {Zone, Data, {NpcStatus, Target, AttackTimer}}};
+    {noreply, State};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
-		{Zone, Data, {_, Target, AttackTimer}}) ->
+		{Ref, Zone, Data, {_, Target, AttackTimer}}) ->
     if 
 	ZoneTarget =:= Target ->
 	    timer:cancel(AttackTimer),
-	    {noreply, {Zone, Data, {normal, none, none}}};
+	    {noreply, {Ref, Zone, Data, {normal, none, none}}};
 	ZoneTarget =/= Target ->
 	    {noreply, State}    
     end;
 
 handle_cast({player_enter, Name}, State =
-		{Zone, Data, {NpcStatus, Target, AttackTimer}}) ->
+		{Ref, Zone, Data, {NpcStatus, _Target, _AttackTimer}}) ->
     case {Data#npc.disp, NpcStatus} of 
 	{hostile, normal} ->
 	    {_, NewAttackTimer} = 
 		timer:send_interval(2000, {'$gen_cast', {attack, Name}}),
-	    {noreply, {Zone, Data, {combat, Name, NewAttackTimer}}};
+	    {noreply, {Ref, Zone, Data, {combat, Name, NewAttackTimer}}};
 	{neutral, _} -> 
 	    {noreply, State};
 	{_, combat} ->
@@ -220,3 +225,8 @@ code_change(_OldVsn, State, _Extra) ->
 -spec get_health(npc()) -> float().
 get_health(#npc{health={Time, Health, MaxHealth}}) ->
     min(Health + timer:now_diff(now(), Time) / 6000000.0, MaxHealth).
+
+%%%===================================================================
+%%% EUnit Tests
+%%%===================================================================
+
