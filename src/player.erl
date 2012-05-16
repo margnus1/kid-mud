@@ -208,12 +208,12 @@ handle_cast({command, Command},
 		    {noreply, State};
 		Target =/= NewTarget ->
 		    case zone:validate_target(Zone, NewTarget) of
-			no_target ->
+			false ->
 			    Console ! {message,
 				       ["Can't find any \"", 
 					NewTarget, "\" here"] },
 			    {noreply, State};
-			valid_target ->
+			{_Type, _Pid} ->
 			    Console ! {message, 
 				       ["You are now attacking ", NewTarget]},
 			    timer:cancel(AttackTimer),

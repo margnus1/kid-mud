@@ -383,7 +383,7 @@ handle_cast({death, PID}, State = #state{players=Players, npc=NPC,
 
 
 handle_cast({say, PlayerPID, Message}, State=#state{players=Players}) ->
-    Name = get_name(PlayerPID, State),
+    {_, Name} = get_name(PlayerPID, State),
     message_players(Players, [Name, " says \"", Message, "\""]),
     {noreply, State};
 
@@ -496,10 +496,9 @@ message_players([{PlayerPID, _}|Rest], Arg1) ->
 message_players([], _) -> ok.
 
 %% @doc Finds the target with name Target
--spec find_target(Target::string(), 
-		  State::{[{pid(), string()}], zone()}) -> 
-			 {player, pid()} | {npc, pid()} | false.
-find_target(Target, {Players, NPC, _}) ->
+-spec find_target(Target::string(), State::state()) ->
+			 {player | npc, pid()} | false.
+find_target(Target, #state{players=Players, npc=NPC}) ->
     case lists:keyfind(Target, 2, NPC) of
 	false ->
 	    case lists:keyfind(Target, 2, Players) of	
@@ -589,99 +588,86 @@ fetch() ->
             Anything
     end.
 
+flush() ->
+    receive 
+	_ -> flush()
+    after 1 ->
+	    ok
+    end.
+
 zone_go_test_() ->
+    Room14 = #zone{id=14, desc="A room!", exits=[{south,5}]},
+    State14 = #state{data=Room14},
     {setup, fun test_setup/0, 
      [?_assertEqual(
-	 {reply,{ok, 5}, {[{self(),"Arne"}],
-			  #zone{id=14, desc="A room!",
-				exits=[{south,5}]}}},
+	 {reply,{ok, 5}, State14#state{players=[{self(), "Arne"}]}},
 	 handle_call({go, self(), south}, self(), 
-		     {[{self(),"Kalle"}, {self(),"Arne"}],
-		      #zone{id=14, desc="A room!", exits=[{south,5}]}})),
-
+		     State14#state{players=[{self(), "Kalle"}, 
+					    {self(), "Arne"}]})),
       ?_assertEqual(
 	 {'$gen_cast', 
 	  {message, ["Kalle", " has left ", "south"]}}, fetch()),
 
       ?_assertEqual(
-	 {reply,{error,doesnt_exist}, 
-	  {[],#zone{id=14, desc="A room!", exits=[]}}},
-	 handle_call({go, self(), south}, self(), 
-		     {[],#zone{id=14, desc="A room!", exits=[]}})),
+	 {reply, {error, doesnt_exist}, State14},
+	 handle_call({go, self(), west}, self(), State14)),
 
-      ?_assertEqual({reply,{ok, 9}, {[], 
-				     #zone{id=12, desc="A room!",
-					   exits=[{south,9}]}}},
+      ?_assertEqual({reply, {ok, 5}, State14},
 		    handle_call(
 		      {go, self(), south}, self(), 
-		      {[{self(),"Arne"}], 
-		       #zone{id=12, desc="A room!", exits=[{south,9}]}}))]}.
+		      State14#state{players=[{self(), "Arne"}]}))]}.
 
-zone_validate_target_test_() ->
-    [?_assertEqual({reply,valid_target, 
-		    {[{self(),"Kalle"},{self(),"Arne"}],
-		     #zone{id=14, desc="A room!",
-			   exits=[{south,5}]}}},
-		   handle_call(
-		     {validate_target, "Kalle"}, self(), 
-		     {[{self(),"Kalle"}, {self(),"Arne"}],
-		      #zone{id=14, desc="A room!", exits=[{south,5}]}})),
+zone_find_target_test_() ->
+    Room14 = #zone{id=14, desc="A room!", exits=[{south,5}]},
+    KRef = make_ref(),
+    Kalle = {KRef, "Kalle"},
+    Arne = {self(), "Arne"},
+    GRef = make_ref(),
+    Goblin = {GRef, "Goblin", 4},
+    State14 = #state{data=Room14, players=[Kalle, Arne], npc=[Goblin]},
+    State14E = #state{data=Room14#zone{exits=[]}},
+    [?_assertEqual({player, KRef}, find_target("Kalle", State14)),
+     ?_assertEqual({npc, GRef}, find_target("Goblin", State14)),
+     ?_assertEqual(false, find_target("Pelle", State14)),
+     ?_assertEqual(false, find_target("Arne", State14E))].
 
-     ?_assertEqual({reply,no_target, 
-		    {[{self(),"Kalle"}],
-		     #zone{id=14, desc="A room",
-			   exits=[{south,5}]}}},
-		   handle_call(
-		     {validate_target, "Arne"}, self(), 
-		     {[{self(),"Kalle"}],
-		      #zone{id=14, desc="A room", exits=[{south,5}]}})),
-
-     ?_assertEqual({reply,no_target, 
-		    {[],#zone{id=14, desc="A", exits=[]}}},
-		   handle_call(
-		     {validate_target, "Arne"}, self(), 
-		     {[],#zone{id=14, desc="A", exits=[]}}))].
-
-zone_say_test_() ->
-    [?_assertEqual({'$gen_cast', {zone_inactive, 12}}, fetch()),
-     ?_assertEqual(
-	{noreply, {[{self(),"Arne"}],[]}},
-	handle_cast({say, self(), "Message"}, {[{self(),"Arne"}],[]})),
-     ?_assertEqual(
-	{'$gen_cast', 
-	 {message, ["Arne", " says \"", "Message", "\""]}}, fetch())].
-
-zone_exits_test_() ->
-    fun () -> handle_cast(
-		{exits, self()}, {[], #zone{id=12, exits=[{north,1}]}}),
-	      ?assertEqual({'$gen_cast',
-			    {message, ["There is an exit to the ", "north"]}}, 
-			   fetch())
-    end.
+zone_say_test() ->
+    Room12 = #zone{id=12, desc="#12"},
+    Arne = {self(), "Arne"},
+    State12 = #state{players=[Arne], data=Room12},
+    flush(),
+    ?assertEqual({noreply, State12},
+		 handle_cast({say, self(), "Message"}, State12)),
+    ?assertEqual(
+       {'$gen_cast', 
+	{message, ["Arne", " says \"", "Message", "\""]}}, fetch()).
 
 zone_enter_test_() ->
-    [?_assertEqual({noreply, {[{self(), "Gunde"}], 
-			      #zone{id=14, desc="A room!", exits=[]}}},
-		   handle_cast({enter, self(), "Gunde", south}, 
-			       {[], #zone{id=14, desc="A room!", exits=[]}})),
+    Room14 = #zone{id=14, desc="A room!", exits=[]},
+    State14 = #state{data=Room14},
+    [?_assertEqual({noreply, State14#state{players=[{self(), "Gunde"}]}},
+		   handle_cast({enter, self(), "Gunde", south}, State14)),
      fun () ->
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("A room!", lists:flatten(Message)),
-	     fetch() % exits, already tested
+	     flush() % exits, already tested
      end,
 
      fun () ->
 	     handle_cast({enter, self(), "Gunde", south}, 
-			 {[{self(),"gg"}], 
-			  #zone{id=14, desc="A room!", exits=[]}}),
+			 State14#state{players=[{self(),"gg"}],
+				       npc=[{self(), "Goblin", 5}]}),
 
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("A room!\nHere stands gg", lists:flatten(Message)),
+	     ?assertEqual("A room!\nHere stands a Goblin\nHere stands gg",
+			  lists:flatten(Message)),
 	     fetch(), % exits, already tested
 
 	     ?assertEqual({'$gen_cast',
 			   {message, ["Gunde" ," arrives from north"]}}, 
-			  fetch())
+			  fetch()),
+
+	     ?assertEqual({'$gen_cast', {player_enter, "Gunde"}}, fetch())
      end].
 
 zone_look_test_() ->
