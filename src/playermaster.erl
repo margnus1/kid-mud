@@ -131,7 +131,7 @@ handle_call({start_player, Name, Console}, _From, {PlayerList, NpcNames}) ->
 	    {reply, login_failed, {PlayerList, NpcNames}};
 	{false, false} ->
 	    PlayerPID = player_sup:start_player(Name, Console),
-	    {reply, {ok, PlayerPID}, [{PlayerPID, Name} | PlayerList]}
+	    {reply, {ok, PlayerPID}, {[{PlayerPID, Name} | PlayerList], NpcNames}}
     end;
 
 handle_call({tell, Name, Msg, Sender}, _From, State = {PlayerList, _NpcNames}) ->
@@ -162,7 +162,7 @@ handle_cast({stop_player, Name}, {PlayerList, NpcNames}) ->
     case lists:keyfind(Name, 2, PlayerList) of
 	{_, _} ->
 	    player_sup:stop_player(Name),
-	    {noreply, lists:keydelete(Name, 2, PlayerList)};
+	    {noreply, {lists:keydelete(Name, 2, PlayerList), NpcNames}};
 	false ->
 	    {noreply, {PlayerList, NpcNames}}
     end;
@@ -170,7 +170,7 @@ handle_cast({stop_player, Name}, {PlayerList, NpcNames}) ->
 
 handle_cast({broadcast, Msg}, {PlayerList, NpcNames}) ->
     broadcast_msg(PlayerList, Msg),
-    {noreply,{PlayerList, NpcNames}};
+    {noreply, {PlayerList, NpcNames}};
 
 
 handle_cast(Msg, State) ->
