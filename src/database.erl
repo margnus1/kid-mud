@@ -3,7 +3,7 @@
 
 -module(database).
 -export([read_player/1, write_player/1, read_zone/1, write_zone/1, read_npc/1,
-	 write_npc/1, find_npc/2, init/0, setup/0, create_tables/1]).
+	 write_npc/1, find_npc/2, get_npc_names/0, init/0, setup/0, create_tables/1]).
 -include("zone.hrl").
 -include("player.hrl").
 -include("npc.hrl").
@@ -82,6 +82,15 @@ find_npc({FromLevel, ToLevel}, Habitat) ->
     {atomic, Result} = mnesia:transaction(Trans),
     Result.
 
+%% @doc Return the list of names on NPCs
+-spec get_npc_names() -> [string()].
+get_npc_names() ->
+    Trans = fun () ->
+		    MatchHead = #npc{name='$1', _ = '_'}, 
+		    mnesia:select(npc, [{MatchHead, [], ['$1']}])
+	    end,
+    {atomic, Result} = mnesia:transaction(Trans),
+    Result.    
 
 %% @doc Starts the database
 %% @spec init() -> ok | {error, Reason}
@@ -153,5 +162,6 @@ database_test_() ->
       fun () -> write_npc(Staalmannen),
 		write_npc(Crab),
 	        ?assertEqual([1232], find_npc({2,4}, forest)) end,
-		?_assertEqual([1232, 1233], find_npc({2,5}, forest)),
-		?_assertEqual([1234], find_npc({1,2}, beach))]}.
+      ?_assertEqual([1232, 1233], find_npc({2,5}, forest)),
+      ?_assertEqual([1234], find_npc({1,2}, beach)),
+      ?_assertEqual(["Crab","Korvgubbe","Staalmannen"], get_npc_names())]}.

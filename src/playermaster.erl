@@ -103,8 +103,9 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
+    NpcNames = database:get_npc_names(),
     process_flag(trap_exit, true),
-    {ok, []}.
+    {ok, {[], NpcNames}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -121,23 +122,25 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 
-handle_call({start_player, Name, Console}, _From, PlayerList) ->
-    case lists:keyfind(Name,2,PlayerList) of
-	{_, _} ->
-	    {reply, login_failed, PlayerList};
-	false ->
-	    %% This case shouldnt happen
+handle_call({start_player, Name, Console}, _From, {PlayerList, NpcNames}) ->
+    SameName = fun(X) -> if X =:= Name -> true; true -> false end end,
+    case {lists:keyfind(Name,2,PlayerList), lists:any(SameName, NpcNames)} of
+	{{_, _}, _} ->
+	    {reply, login_failed, {PlayerList, NpcNames}};
+	{false, true} ->
+	    {reply, login_failed, {PlayerList, NpcNames}};
+	{false, false} ->
 	    PlayerPID = player_sup:start_player(Name, Console),
 	    {reply, {ok, PlayerPID}, [{PlayerPID, Name} | PlayerList]}
     end;
 
-handle_call({tell, Name, Msg, Sender}, _From, PlayerList) ->
+handle_call({tell, Name, Msg, Sender}, _From, State = {PlayerList, _NpcNames}) ->
     case lists:keyfind(Name, 2,PlayerList) of
 	{Player, _} ->
 	    player:message(Player, [Sender," tells you \"" ,Msg, "\""]),
-	    {reply, ok, PlayerList};
+	    {reply, ok, State};
 	false ->
-	    {reply, msg_failed, PlayerList}
+	    {reply, msg_failed, State}
     end;   
 
 handle_call(Request, _From, State) ->
@@ -155,19 +158,19 @@ handle_call(Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({stop_player, Name}, PlayerList) ->
+handle_cast({stop_player, Name}, {PlayerList, NpcNames}) ->
     case lists:keyfind(Name, 2, PlayerList) of
 	{_, _} ->
 	    player_sup:stop_player(Name),
 	    {noreply, lists:keydelete(Name, 2, PlayerList)};
 	false ->
-	    {noreply, PlayerList}
+	    {noreply, {PlayerList, NpcNames}}
     end;
 
 
-handle_cast({broadcast, Msg}, PlayerList) ->
+handle_cast({broadcast, Msg}, {PlayerList, NpcNames}) ->
     broadcast_msg(PlayerList, Msg),
-    {noreply,PlayerList};
+    {noreply,{PlayerList, NpcNames}};
 
 
 handle_cast(Msg, State) ->
