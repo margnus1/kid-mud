@@ -14,7 +14,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/3, get_ref/1, damage/3, stop_attack/2, player_enter/2]).
+-export([start_link/3, get_ref/1, damage/3, stop_attack/2, player_enter/2,
+        message/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -38,10 +39,10 @@ start_link(Id, Zone, Ref) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Sends the NPCs reference as a reply
+%% Gets the reference used with npc_sup to this npc
 %% @end
 %%--------------------------------------------------------------------
--spec get_ref(pid()) -> ok.
+-spec get_ref(pid()) -> reference().
 get_ref(Npc) ->
     gen_server:call(Npc, get_ref).
 
@@ -71,6 +72,15 @@ stop_attack(Npc, Target) ->
 -spec player_enter(pid(), string()) -> ok.
 player_enter(Npc, Name) ->
     gen_server:cast(Npc, {player_enter, Name}).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Send a text message to the npc. The message is ignored.
+%% @end
+%%--------------------------------------------------------------------
+-spec message(pid(), string()) -> ok.
+message(_, _) -> ok.
 
 %%%===================================================================
 %%% gen_server callbacks

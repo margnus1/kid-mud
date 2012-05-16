@@ -2,11 +2,11 @@
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
-%%% @author Magnus Lang <mala7837@fries.it.uu.se>
+%%% @author Magnus Lång <mala7837@fries.it.uu.se>
 %%% @doc
 %%%
 %%% @end
-%%% Created :  8 May 2012 by Magnus Lång <mala7837@fries.it.uu.se>
+%%% Created : 8 May 2012 by Magnus Lång <mala7837@fries.it.uu.se>
 %%%-------------------------------------------------------------------
 -module(zone).
 -include("zone.hrl").
@@ -203,7 +203,7 @@ init([Id]) ->
     Dead_Npc = lists:map(
 		 fun({dead, RespawnTime}) ->
 			 {ok, Timer} = timer:send_after(
-					 timer:now_diff(RespawnTime, Now),
+					 timer:now_diff(RespawnTime, Now) div 1000,
 					 {'$gen_cast', {respawn, RespawnTime}}),
 			 {RespawnTime, Timer} end, 
 		 RespawnTimes),
@@ -215,11 +215,11 @@ init([Id]) ->
 		    Id = case Npc of 
 			     {dead, _} -> 
 				 random_element(NpcsThatCanSpawn);
-				 Id -> Id
+                             Id -> Id
 			 end,
 		    Pid = npc_sup:start_npc(Id, Zone),
 		    Name = npc:get_name(Pid),
-		    {Pid, Name, Npc}		
+		    {Pid, Name, Id}		
 	      end,
 	      AliveIds),
     
@@ -241,7 +241,8 @@ init([Id]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({go, PlayerPID, Direction},
-	    _From, State = #state{players=Players, npc=NPC, data=Data = #zone{id=Id, exits=Exits}}) ->
+	    _From, State = #state{players=Players, 
+                                  data=#zone{id=Id, exits=Exits}}) ->
     E = [CurrentExits || CurrentExits = {Dir, _} <- Exits,
 			 Dir =:= Direction ],
     case E of
@@ -249,35 +250,19 @@ handle_call({go, PlayerPID, Direction},
 	    {reply, {error, doesnt_exist}, State};
 
 	[{_, DirectionID}] -> 
-	    case lists:keydelete(PlayerPID, 1, Players) of
+            UpdatedPlayers = lists:keydelete(PlayerPID, 1, Players),
+            inactivate_if_empty(UpdatedPlayers, Id),
+            
+            {player, Name} = get_name(PlayerPID, State),
+            message_players(UpdatedPlayers, [Name, " has left ",
+                                             atom_to_list(Direction)]),
 
-		[] ->
-		    zonemaster:zone_inactive(Id),
-		    {reply, {ok, DirectionID}, State#state{players=[]}};
-
-		UpdatedPlayers ->
-		    Name = get_player_name(PlayerPID, Players),
-
-		    message_players(UpdatedPlayers, message,
-				    [Name, " has left ",
-				     atom_to_list(Direction)]),
-
-		    {reply, {ok, DirectionID}, State#state{players=UpdatedPlayers}}
-	    end
+            {reply, {ok, DirectionID}, State#state{players=UpdatedPlayers}}
     end;
 
 
-handle_call({validate_target, Target},
-	    _From, State) ->
-
-    case find_target(Target, State) of
-	{player, _P} ->
-	    {reply, valid_target, State};
-	{npc, _N} ->
-	    {reply, valid_target, State};
-	false ->
-	    {reply, no_target, State}
-    end;
+handle_call({validate_target, Target}, _From, State) ->
+    {reply, find_target(Target, State), State};
 
 
 handle_call(Request, _From, State) ->
@@ -307,160 +292,112 @@ handle_cast({look, PlayerPID},
 
 
 handle_cast({enter, PlayerPID, Name, Direction}, 
-	    {Players, NPC, Data = #zone{exits=Exits}}) ->
-    player:message(PlayerPID, look_message(Players, NPC, Data)),
+	    State = #state{players=Players, npc=NPC, data=#zone{exits=Exits}}) ->
+    player:message(PlayerPID, look_message(State)),
     player:message(PlayerPID, exits_message(Exits)),
 
-    message_players(Players, message, [Name, format_arrival(Direction)]),
+    message_players(Players, [Name, format_arrival(Direction)]),
+    [npc:player_enter(NpcPid, Name) || {NpcPid, _, _} <- NPC],
 
     UpdatedPlayers = [{PlayerPID, Name} | Players],
 
-    {noreply, {UpdatedPlayers, NPC, Data}};
-
-handle_cast({logout, PlayerPID}, {Players, NPC, Data = #zone{id=Id}}) ->
-    case lists:keydelete(PlayerPID, 1, Players) of 
-
-	[] ->
-	    zonemaster:zone_inactive(Id),
-	    {noreply,  {[], NPC, Data}};
-
-	UpdatedPlayers ->
-	    message_players(
-	      UpdatedPlayers, message,
-	      [get_player_name(PlayerPID, Players), " has logged out"]),
-
-	    {noreply, {UpdatedPlayers, NPC, Data}}
-    end;
+    {noreply, State#state{players=UpdatedPlayers}};
 
 
-handle_cast({exits, PlayerPID}, State={_,_,#zone{exits=Exits}}) ->
+handle_cast({logout, PlayerPID}, State) ->
+    logout_player(PlayerPID, State);
+
+
+handle_cast({exits, PlayerPID}, State = #state{data=#zone{exits=Exits}}) ->
     player:message(PlayerPID, exits_message(Exits)),
     {noreply, State};
 
 
-handle_cast({kick, Name}, {Players, NPC, Data = #zone{id=Id}}) ->
+handle_cast({kick, Name}, State = #state{players=Players}) ->
     case lists:keyfind(Name, 2, Players) of 
 	{PlayerPID, _} ->
 	    player:kick(PlayerPID),
-
-	    case lists:delete({PlayerPID,Name}, Players) of 
-		[] ->
-		    zonemaster:zone_inactive(Id),
-		    {noreply,  {[], NPC, Data}};
-
-		UpdatedPlayers ->
-		    message_players(
-		      UpdatedPlayers, message, [Name, " has logged out"]),
-
-		    {noreply, {UpdatedPlayers, NPC, Data}}
-	    end;
+            logout_player(PlayerPID, State);
 
 	false ->
-	    {noreply, {Players, NPC, Data}}
-    end;
-
-
-handle_cast({attack, PlayerPID, Target, Damage}, 
-	    State = {Players, NPC, _}) -> 
-    %% @todo make attack npc friendly. PlayerPID=PID och alla player:message? 
-
-    {_,Name} = get_name(PlayerPID, Players, NPC),
-
-    case find_target(Target, State) of 
-	{player, TargetPID} ->
-	    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
-	    Rest =  lists:keydelete(TargetPID, 1, OtherPlayers),
-	    case Damage of 
-		miss ->
-		    message_players(
-		      Rest, message, io_lib:format("~s misses ~s",
-						   [Name, Target])),
-
-		    player:message(PlayerPID, 
-				   ["You miss your attack on ", Target]),
-		    player:message(TargetPID,
-				   [Name, " misses his attack on YOU"]),
-		    {noreply, State};
-		Damage -> 
-		    message_players(
-		      Rest, message, io_lib:format("~s hits ~s for ~p",
-						   [Name, Target, Damage])),
-
-		    player:message(
-		      PlayerPID, io_lib:format(
-				   "You hit ~s for ~p", [Target, Damage])),
-
-		    player:damage(TargetPID, Damage, Name),
-		    {noreply, State}
-	    end;
-	{npc, Npc} ->
-	    OtherPlayers = lists:keydelete(PlayerPID, 1, Players),
-
-	    case Damage of 
-		miss ->
-		    message_players(
-		      OtherPlayers, message, io_lib:format("~s misses ~s",
-							   [Name, Target])),
-		    player:message(PlayerPID, 
-				   ["You miss your attack on ", Target]),
-		    {noreply, State};
-
-		Damage ->
-		    message_players(
-		      OtherPlayers,
-		      message, io_lib:format("~s hits ~s for ~p",
-					     [Name, Target, Damage])),
-
-		    player:message(
-		      PlayerPID, io_lib:format(
-				   "You hit ~s for ~p", [Target, Damage])),
-
-		    {noreply, State}
-	    end;
-
-	false ->
-	    player:stop_attack(PlayerPID, Target),
 	    {noreply, State}
     end;
 
 
-handle_cast({death, PID}, State = {Players, NPC, Data = #zone{id=Id}}) ->
+handle_cast({attack, AttackerPID, Target, Damage}, 
+	    State = #state{players=Players}) -> 
 
-    {_,Name} = get_name(PID, Players, NPC),
-
-    case find_target(Name, State) of 
-	{player, TargetPID} ->
-	    case lists:keydelete(PID, 1, Players) of
-		[] ->
-		    zonemaster:zone_inactive(Id),
-		    {noreply,  {[], Data}};
-
-		UpdatedPlayers ->
-		    playermaster:broadcast([Name, " has been slain!"]),
-
-		    message_players(UpdatedPlayers, stop_attack, Name),
-
-		    {noreply, {UpdatedPlayers, NPC, Data}}
-	    end;
-
-	{npc, Npc} ->
-	    %% @todo npc death
-	    lists:keydelete(PID, 1, NPC),
-
-	    message_players(
-	      Players, message, [Name, "has been killed!"]),
-
-	    {noreply, {Players, NPC, Data}}
-
+    {_,Attacker} = get_name(AttackerPID, State),
+    case find_target(Target, State) of 
+        {TargetType, TargetPID} ->
+            Bystanders = lists:keydelete(TargetPID, 1, 
+                                         lists:keydelete(AttackerPID, 1, Players)),
+            case Damage of
+                miss ->
+                    message_players(Bystanders, [Attacker, " misses ", Target]),
+                    TargetType:message(AttackerPID, ["You miss your attack on ", Target]),
+                    TargetType:message(TargetPID, [Attacker, " misses his attack on YOU"]);
+                
+                Damage ->
+                    message_players(Bystanders, [Attacker, " hits ", Target,
+                                                 " for ", integer_to_list(Damage)]),
+                    TargetType:message(AttackerPID, ["You hit ", Target, " for ",
+                                                     integer_to_list(Damage)]),
+                    TargetType:damage(TargetPID, Damage, Attacker)
+            end,
+            {noreply, State};
+        
+        false ->
+    	    player:stop_attack(AttackerPID, Target),
+	    {noreply, State}
     end;
 
 
-handle_cast({say, PlayerPID, Message}, State={Players,_,_}) ->
-    Name = get_player_name(PlayerPID, Players),
+handle_cast({death, PID}, State = #state{players=Players, npc=NPC, 
+                                         dead_npc=DeadNpc, data=#zone{id=Id}}) ->
+    {Type, Name} = get_name(PID, State),
 
-    message_players(Players, message, [Name, " says \"", Message, "\""]),
+    case Type of 
+	player ->
+            UpdatedPlayers = lists:keydelete(PID, 1, Players),
+	    inactivate_if_empty(UpdatedPlayers, Id),
+            playermaster:broadcast([Name, " has been slain!"]),
 
+            %% @todo perhaps tell npcs as well?
+            %% message_players(UpdatedPlayers, stop_attack, Name),
+            {noreply, State#state{players=UpdatedPlayers}};
+
+	npc ->
+            npc_sup:stop_npc(npc:get_ref(PID)),
+	    UpdatedNpcs = lists:keydelete(PID, 1, NPC),
+	    message_players(Players, [Name, "has been killed!"]),
+
+            RespawnDelay = 20000,
+            RespawnTime = time_add(now(), RespawnDelay),
+            {ok, Timer} = timer:send_after(RespawnDelay, 
+                                           {'$gen_cast', {respawn, RespawnTime}}),
+
+	    {noreply, State#state{npc=UpdatedNpcs, 
+                                  dead_npc=[{RespawnTime, Timer} | DeadNpc]}}
+    end;
+
+
+handle_cast({say, PlayerPID, Message}, State=#state{players=Players}) ->
+    Name = get_name(PlayerPID, State),
+    message_players(Players, [Name, " says \"", Message, "\""]),
     {noreply, State};
+
+
+handle_cast({respawn, RespawnTime}, State=#state{npc=NPC, dead_npc=DeadNPC, 
+                                                 data=Data}) ->
+    NpcsThatCanSpawn = database:find_npc(Data#zone.level_range, Data#zone.habitat),
+    Id = random_element(NpcsThatCanSpawn),
+    Pid = npc_sup:start_npc(Id, self()),
+    Name = npc:get_name(Pid),
+
+    UpdatedDeadNPC = lists:keydelete(RespawnTime, 1, DeadNPC),
+    UpdatedNPC = [{Pid, Name, Id} | NPC],
+    {noreply, State#state{npc=UpdatedNPC, dead_npc=UpdatedDeadNPC}};
 
 
 handle_cast(Msg, State) ->
@@ -492,14 +429,19 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {Players, NPC, Data}) ->
-    [player:kick(PlayerPID) || {PlayerPID,_} <- Players],
-    
+terminate(_Reason, #state{players=Players, npc=NPC, 
+                          dead_npc=DeadNpc, data=Data}) ->
+
+    io:fwrite("Zone ~p shutting down~n", [Data#zone.id]),
+
+    [player:kick(PlayerPID) || {PlayerPID, _} <- Players],
     [npc_sup:stop_npc(npc:get_ref(Pid)) || {Pid, _, _} <- NPC],
+    [timer:cancel(Timer) || {_, Timer} <- DeadNpc],
 
     NpcIds = [Id || {_, _, Id} <- NPC],
+    DeadTimes = [{dead, RespawnTime} || {RespawnTime, _} <- DeadNpc],
 	   
-    database:write_zone(Data#zone{npc=NpcIds}),
+    database:write_zone(Data#zone{npc=NpcIds ++ DeadTimes}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -517,11 +459,41 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+%% @doc Advances Timestamp by Delta milliseconds
+-spec time_add(Timestamp :: erlang:timestamp(), 
+               Delta :: integer()) -> erlang:timestamp().
+time_add({MegaS, S, MicroS}, Delta) ->
+    NewMicroS = MicroS + Delta * 1000,
+    NewS = S + NewMicroS div 1000000,
+    NewMegaS = MegaS + NewS div 1000000,
+    {NewMegaS, NewS rem 1000000, NewMicroS rem 1000000}.
+
+%% @doc 
+%% Logs the player with pid PlayerPID out
+%% and returns a handle_cast compatible result
+%% @end
+logout_player(PlayerPID, State = #state{players=Players, data=#zone{id=Id}}) ->
+    UpdatedPlayers = lists:keydelete(PlayerPID, 1, Players),
+
+    inactivate_if_empty(UpdatedPlayers, Id),
+    
+    {player, Name} = get_name(PlayerPID, State),
+    message_players(UpdatedPlayers, [Name, " has logged out"]),
+
+    {noreply, State#state{players=UpdatedPlayers}}.
+
+%% @doc 
+%% If the list List is empty, inactivates zone Id, otherwise do nothing
+%% @end
+-spec inactivate_if_empty([any()], integer()) -> ok.
+inactivate_if_empty([], Id) -> zonemaster:zone_inactive(Id);
+inactivate_if_empty(_,  _)  -> ok.
+
 %% @doc Sends a message to all the players in the zone
-message_players([{PlayerPID, _}|Rest], Notice, Arg1) ->
-    player:Notice(PlayerPID, Arg1),
-    message_players(Rest, Notice, Arg1);
-message_players([], _, _) -> ok.
+message_players([{PlayerPID, _}|Rest], Arg1) ->
+    player:message(PlayerPID, Arg1),
+    message_players(Rest, Arg1);
+message_players([], _) -> ok.
 
 %% @doc Finds the target with name Target
 -spec find_target(Target::string(), 
@@ -541,14 +513,11 @@ find_target(Target, {Players, NPC, _}) ->
     end.
 
 %% @doc Constructs a "look" message
--spec look_message(Players::[{pid(), string()}], 
-		   NPC::[{pid(), string(), integer()}], 
-		   Zone::zone()) -> string().
-
-look_message(Players, NPC, Zone) ->
-    [Zone#zone.desc,
-     lists:map(fun({_, Name, _}) -> ["\n", "Here stand a ", Name] end,
-     	       Zone#zone.npc),
+-spec look_message(State :: state()) -> string().
+look_message(#state{players=Players, npc=NPC, data=Data}) ->
+    [Data#zone.desc,
+     lists:map(fun({_, Name, _}) -> ["\n", "Here stands a ", Name] end,
+     	       NPC),
      colour:text(blue, lists:map(fun({_, Name}) -> 
 					 ["\n", "Here stands ", Name] end,
 				 Players))]. %% ++
@@ -571,31 +540,25 @@ exits_message(Exits) ->
      string:join(
        lists:map(fun ({Dir, _}) -> atom_to_list(Dir) end, Exits), ", ")].
 
-%% @doc Gets the name of the player with PID Player from player list Players
-get_player_name(PlayerPID, Players) ->
-    {_, Name} = lists:keyfind(PlayerPID, 1, Players), 
-    Name.
-
-%% @doc Gets the name of the player or NPC 
-%% with PID from player list Players or NPC list
+%% @doc Gets the name of the player or NPC with pid PID
+%% currently in the zone with state State.
 %% @end
-get_name(PlayerPID, Players, NPC) ->
-    case lists:keyfind(PlayerPID, 1, Players) of
+-spec get_name(pid(), state()) -> {npc | player, string()}.
+get_name(PID, #state{players=Players, npc=NPC}) ->
+    case lists:keyfind(PID, 1, Players) of
 	false ->
-	    case lists:keyfind(PlayerPID, 1, NPC) of
-		Name -> 
-		    Name
-	    end;
-	Name ->
-	    Name
+	    {_, Name, _} = lists:keyfind(PID, 1, NPC),
+            {npc, Name};
+	{_, Name} ->
+	    {player, Name}
     end.
 
 
-%% @doc Constructs a "arrival" message
+%% @doc Constructs an "arrival" message
 format_arrival(north) -> " arrives from south";
-format_arrival(east) -> " arrives from west";
+format_arrival(east)  -> " arrives from west";
 format_arrival(south) -> " arrives from north";
-format_arrival(west) -> " arrives from east";
+format_arrival(west)  -> " arrives from east";
 format_arrival(login) -> " logged in".
 
 
