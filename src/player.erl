@@ -78,15 +78,6 @@ damage(Player, Damage, Attacker) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts to attack the target if target is in the same zone
-%% @end
-%%--------------------------------------------------------------------
--spec attack(pid(), string()) -> ok.
-attack(Player, Target) ->
-    gen_server:cast(Player, {attack, Target}).
-
-%%--------------------------------------------------------------------
-%% @doc
 %% If Player attacks Target, Player stops attacking
 %% @end
 %%--------------------------------------------------------------------
@@ -146,8 +137,7 @@ handle_call(Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({command, Command}, 
-	    State = {Console, Zone, Data, 
-		     CombatState = {_, Target, AttackTimer}}) ->
+	    State = {Console, Zone, Data, {_, Target, AttackTimer}}) ->
     case parser:parse(Command) of
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
@@ -231,8 +221,7 @@ handle_cast({command, Command},
 	    {noreply, State}
     end;
 
-handle_cast({attack, NewTarget}, 
-	    {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}) ->
+handle_cast({attack, Target}, State = {_,Zone,_,_}) ->
 
     ToHit = random:uniform(100),
     if ToHit > 20 ->
@@ -241,8 +230,8 @@ handle_cast({attack, NewTarget},
 	    Damage = miss
     end,
 
-    zone:attack(Zone, self(), NewTarget, Damage),
-    {noreply, {Console, Zone, Data, {PlayerStatus, Target, AttackTimer}}};
+    zone:attack(Zone, self(), Target, Damage),
+    {noreply, State};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
 		{Console, Zone, Data, {_, Target, AttackTimer}}) ->
@@ -358,26 +347,44 @@ player_test_() ->
     {setup, fun test_setup/0, 
      [
       fun () ->		  
-	      ?assertEqual(handle_cast({message, "foo"}, 
-				       {self(),what,ever,ever}),
-			   {noreply, {self(),what,ever,ever}}),
+	      ?assertEqual({noreply, {self(),what,ever,ever}},
+			   handle_cast({message, "foo"}, 
+				       {self(),what,ever,ever})),
 	      ?assertEqual({message, "foo"}, fetch()),
 	      flush()
       end,
       fun () ->
 	      Data = #player{name = "gunnar"},
- 	      ?assertEqual(handle_cast(kick, {self(),what,Data,ever}),
- 			   {noreply, {self(),what,Data,ever}}),
+ 	      ?assertEqual({noreply, {self(),what,Data,ever}}, 
+			   handle_cast(kick, {self(),what,Data,ever})),
  	      ?assertEqual(fetch(), {message, "You have been kicked!"}),
 	      flush()
       end,
       fun () ->
-	      %% Test for handle_cast({damage, integer(), string()},
-	      %%                      {pid(),pid(),player()}
+	      Data = #player{name="foo"},
+	      Value = handle_cast({damage, 110, "attacker"},
+				  {self(), self(),Data,whatever}),
+	      NewData = element(3, element(2, Value)),
+	      ?assertNotEqual(Data, NewData),
+	      ?assertEqual(Data#player.name, NewData#player.name),
+	      ?assertEqual({noreply, {self(), self(), NewData, whatever}},
+			   Value),
+	      ?assertEqual({message, "You are Dead!"}, fetch()),
+	      ?assertEqual({'$gen_cast',{death,self()}}, fetch()),
+	      flush()
+      end,
+      fun () ->
+ 	      ?assertEqual({noreply, {what,self(),ever,ever}}, 
+			   handle_cast({attack, "Findus"}, 
+				       {what,self(),ever,ever})),
+ 	      ?assertEqual({'$gen_cast', {attack, self(), "Findus", 14}}, fetch()),
+	      flush()
+      end,     
+      fun () ->
 	      Data = #player{name = "Pontus"},
-	      NewData = element(3, element(2,handle_cast({damage, 20, "hanna"},
-							 {self(), self(), 
-							  Data, ever}))),
+	      NewData = element(3,element(2,handle_cast({damage, 20, "hanna"},
+							{self(), self(), 
+							 Data, ever}))),
 	      ?assertEqual(round(element(2, NewData#player.health)), 80),
 	      ?assertEqual({message, ["hanna"," hits YOU for damage: ","20"]},
 			   fetch()),
