@@ -4,7 +4,7 @@
 -record(npc, {id, 
 	      name, 
 	      disp=neutral, 
-	      health={erlang:now(), 30.0, 30.0}, 
+	      health=30, 
 	      damage=3, 
 	      attack_speed=1.0,
 	      level=1, 

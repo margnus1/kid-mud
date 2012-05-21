@@ -101,6 +101,7 @@ stop_attack(Player, Target) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Name, Console]) ->
+    process_flag(trap_exit, true),
     Data = database:read_player(Name),
     Zone = zonemaster:get_zone(Data#player.location),
     zone:enter(Zone, self(), Name, login),
@@ -256,10 +257,9 @@ handle_cast(kick, State={Console,_,#player{name=Name},_}) ->
 handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
     {_, Health} = NewData#player.health,
-    if 
-	Health > 0.0 ->
-	    Console ! {message, [Attacker ," hits YOU for damage: ", 
+    Console ! {message, [Attacker ," hits YOU for damage: ", 
 				 integer_to_list(Damage)]},
+    if 	Health > 0.0 ->	    
 	    {noreply, {Console, Zone, NewData, CombatState}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},
@@ -284,6 +284,9 @@ handle_cast(Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info({'EXIT', _From, _Reason}, State) ->
+    {stop, normal, State};
+
 handle_info(Info, State) ->
     io:fwrite("Unknown info to player ~p: ~p~n", [self(), Info]),
     {noreply, State}.

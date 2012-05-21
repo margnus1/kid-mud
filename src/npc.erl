@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg, Michael Bergroth and Eric ArnerlÃ¶v
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -15,7 +15,7 @@
 
 %% API
 -export([start_link/3, get_ref/1, damage/3, stop_attack/2, player_enter/2,
-        message/2]).
+        message/2, get_name/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -37,7 +37,7 @@
 					      ignore | 
 					      {error, term()}.
 start_link(Id, Zone, Ref) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Id, Zone, Ref], []).
+    gen_server:start_link(?MODULE, [Id, Zone, Ref], []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -84,6 +84,9 @@ player_enter(Npc, Name) ->
 -spec message(pid(), string()) -> ok.
 message(_, _) -> ok.
 
+get_name(PID) ->
+    gen_server:call(PID, get_name).
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -118,8 +121,11 @@ init([Id, Zone, Ref]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call(get_ref, _From, State =
-	   {Ref, _Zone, _Data, _CombatState}) ->
-    {reply, Ref, State}.
+	   {Ref, _Zone, _Data, _Health, _CombatState}) ->
+    {reply, Ref, State};
+
+handle_call(get_name, _From, State = {_, _, #npc{name=Name}, _, _}) ->
+    {reply, Name, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -132,8 +138,8 @@ handle_call(get_ref, _From, State =
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({damage, Damage, Attacker}, State = 
-		{_Ref, Zone, Data, CurrentHealth, 
-		 CombatState = {NpcStatus, _Target, _AttackTimer}}) ->
+		{Ref, Zone, Data, CurrentHealth, 
+		 CombatState = {NpcStatus, _Target, AttackTimer}}) ->
     NewHealth = {erlang:now(),
 		 get_health(CurrentHealth, Data#npc.health) - Damage},
     {_,Health} = NewHealth,
@@ -145,14 +151,15 @@ handle_cast({damage, Damage, Attacker}, State =
 		    {_, NewAttackTimer} = 
 			timer:send_interval(AttackSpeed, 
 					    {'$gen_cast', {attack, Attacker}}),
-		    {noreply, {_Ref, Zone, Data, NewHealth, {combat, Attacker, 
+		    {noreply, {Ref, Zone, Data, NewHealth, {combat, Attacker, 
 							    NewAttackTimer}}};
 		NpcStatus =:= combat ->
-		    {noreply, {_Ref, Zone, Data, NewHealth, CombatState}}
+		    {noreply, {Ref, Zone, Data, NewHealth, CombatState}}
 	    end;
 	Health =< 0.0 ->    
 	    zone:death(Zone, self()),
-	    {noreply, State}
+	    timer:cancel(AttackTimer),
+	    {noreply, {Ref, Zone, Data, CurrentHealth, {normal, none, none}}}
     end;
 
 handle_cast({attack, NewTarget}, State =  
@@ -167,11 +174,11 @@ handle_cast({attack, NewTarget}, State =
     {noreply, State};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
-		{_Ref, Zone, Data, _CurrentHealth, {_, Target, AttackTimer}}) ->
+		{Ref, Zone, Data, CurrentHealth, {_, Target, AttackTimer}}) ->
     if 
 	ZoneTarget =:= Target ->
 	    timer:cancel(AttackTimer),
-	    {noreply, {_Ref, Zone, Data, _CurrentHealth, {normal, none, none}}};
+	    {noreply, {Ref, Zone, Data, CurrentHealth, {normal, none, none}}};
 	ZoneTarget =/= Target ->
 	    {noreply, State}    
     end;
