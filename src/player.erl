@@ -336,6 +336,7 @@ fetch() ->
             Anything
     end.
 
+%% @hidden
 flush() ->
     receive 
 	_ -> flush()
