@@ -327,7 +327,7 @@ handle_cast({kick, Name}, State = #state{players=Players}) ->
 handle_cast({attack, AttackerPID, Target, Damage}, 
 	    State = #state{players=Players}) -> 
 
-    {_,Attacker} = get_name(AttackerPID, State),
+    {AttackerType, Attacker} = get_name(AttackerPID, State),
     case find_target(Target, State) of 
         {TargetType, TargetPID} ->
             Bystanders = lists:keydelete(TargetPID, 1, 
@@ -335,13 +335,13 @@ handle_cast({attack, AttackerPID, Target, Damage},
             case Damage of
                 miss ->
                     message_players(Bystanders, [Attacker, " misses ", Target]),
-                    TargetType:message(AttackerPID, ["You miss your attack on ", Target]),
+                    AttackerType:message(AttackerPID, ["You miss your attack on ", Target]),
                     TargetType:message(TargetPID, [Attacker, " misses his attack on YOU"]);
                 
                 Damage ->
                     message_players(Bystanders, [Attacker, " hits ", Target,
                                                  " for ", integer_to_list(Damage)]),
-                    TargetType:message(AttackerPID, ["You hit ", Target, " for ",
+                    AttackerType:message(AttackerPID, ["You hit ", Target, " for ",
                                                      integer_to_list(Damage)]),
                     TargetType:damage(TargetPID, Damage, Attacker)
             end,
@@ -749,39 +749,33 @@ zone_attack_test_() ->
 	     ?assertEqual({'$gen_cast', {damage, 1, "Kurt"}}, fetch())
      end,
 
-%%===================================================================================
-%% Utdaterat test eftersom NPCn inte ligger i zonen. Ska skrivas om
-%%===================================================================================
-%%      fun () ->
-%% 	     handle_cast({attack, self(), "Ghost", 10}, 
-%% 			 {[{self(),"Kurt"},{self(),"Gunnar"}],
-%% 			  #zone{id=5, exits=[], npc=[{npc,1,"Ghost", neutral,{erlang:now(), 30.0, 30.0}, 3}]}}),
+     fun () ->
 
-%% 	     {'$gen_cast', {message, Message}} = fetch(),
-%% 	     ?assertEqual("Kurt hits Ghost for 10", lists:flatten(Message)),
-%% 	     {'$gen_cast', {message, Message2}} = fetch(),
-%% 	     ?assertEqual("You hit Ghost for 10", lists:flatten(Message2))
-%% 	     %%{'$gen_cast', {message, Message3}} = fetch()
-%% 	     %%?assertEqual("Ghost has been killed!", lists:flatten(Message3)),
-%% 	     %%{'$gen_cast', {message, Message4}} = fetch(),
-%% 	     %%?assertEqual("Ghost has been killed!", lists:flatten(Message4)),
-%% 	     %%?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
-%% 	     %%?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
-%%      end,
-%%===================================================================================
+	     handle_cast({attack, self(), "Goblin", 10}, 
+			 #state{data=#zone{id=17, desc="A room!", exits=[{south,5}]}, 
+				players=[{self(),"Kurt"},{self(),"Gunnar"}], 
+				npc=[{self(), "Goblin", 4}]}),
+
+	     {'$gen_cast', {message, Message2}} = fetch(),
+	     ?assertEqual("You hit Goblin for 10", lists:flatten(Message2)),
+
+	     ?assertEqual({'$gen_cast', {damage, 10, "Kurt"}}, fetch())
+
+
+     end,
 
      fun () ->
 	     handle_cast({attack, self(), "Scurt", 10}, 
 			 #state{players=[{self(),"Kurt"}], 
-				 data=#zone{id=2, exits=[{north,1},{south,2}]}}),
+				data=#zone{id=2, exits=[{north,1},{south,2}]}}),
 	     ?assertEqual({'$gen_cast', {stop_attack, "Scurt"}}, fetch())
      end,
 
      fun () ->
 	     handle_cast({attack, self(), "Dingo", miss}, 
 			 #state{players=[{self(),"Kurt"}, 
-					  {self(),"Dingo"}, {self(), "Observer"}],
-				 data=#zone{id=5, exits=[]}}),
+					 {self(),"Dingo"}, {self(), "Observer"}],
+				data=#zone{id=5, exits=[]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("Kurt misses Dingo", lists:flatten(Message)),
 	     {'$gen_cast', {message, Message2}} = fetch(),
