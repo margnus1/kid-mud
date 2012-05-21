@@ -372,6 +372,8 @@ player_test_() ->
 	      ?assertEqual(Data#player.name, NewData#player.name),
 	      ?assertEqual({noreply, {self(), self(), NewData, whatever}},
 			   Value),
+	      ?assertEqual({message, ["attacker", " hits YOU for damage: ",
+				     "110"]}, fetch()),	      
 	      ?assertEqual({message, "You are Dead!"}, fetch()),
 	      ?assertEqual({'$gen_cast',{death,self()}}, fetch()),
 	      flush()

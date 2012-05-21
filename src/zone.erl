@@ -400,11 +400,12 @@ handle_cast({respawn, RespawnTime}, State=#state{npc=NPC, dead_npc=DeadNPC,
     Name = npc:get_name(Pid),
 
     [npc:player_enter(Pid, Name) || {_,Name} <- Players],
-    message_players(Players, [Name, " has ", random_element(
-					      ["emerged from the bushwork",
-					       "sprung from the ground",
-					       "descended from the heavens",
-					       "appeared from thin air"])]),
+    message_players(Players, ["A ", Name, " has ", 
+			      random_element(
+				["emerged from the bushwork",
+				 "sprung from the ground",
+				 "descended from the heavens",
+				 "appeared from thin air"])]),
 
     UpdatedDeadNPC = lists:keydelete(RespawnTime, 1, DeadNPC),
     UpdatedNPC = [{Pid, Name, Id} | NPC],
@@ -609,6 +610,8 @@ fetch() ->
     receive
         Anything ->
             Anything
+    after 100 ->
+	    no_message
     end.
 
 flush() ->
@@ -745,7 +748,7 @@ zone_logout_test_() ->
 		   handle_cast({logout, self()}, 
 			       #state{players=[{self(), "Arne"}],
 				      data=#zone{id=8, exits=[]}})),
-
+     
      ?_assertEqual({'$gen_cast', {zone_inactive, 8}},
 		   fetch())
     ].
