@@ -188,6 +188,7 @@ say(Zone, PlayerPID, Message) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Id]) ->
+    process_flag(trap_exit, true),
     Data = database:read_zone(Id),
     Zone = self(),
     Now = now(),
@@ -212,14 +213,14 @@ init([Id]) ->
 
     NPC = lists:map(
 	    fun(Npc) -> 
-		    Id = case Npc of 
+		    NpcId = case Npc of 
 			     {dead, _} -> 
 				 random_element(NpcsThatCanSpawn);
-                             Id -> Id
+                             NId -> NId
 			 end,
-		    Pid = npc_sup:start_npc(Id, Zone),
+		    Pid = npc_sup:start_npc(NpcId, Zone),
 		    Name = npc:get_name(Pid),
-		    {Pid, Name, Id}		
+		    {Pid, Name, NpcId}		
 	      end,
 	      AliveIds),
     
@@ -371,7 +372,7 @@ handle_cast({death, PID}, State = #state{players=Players, npc=NPC,
 	npc ->
             npc_sup:stop_npc(npc:get_ref(PID)),
 	    UpdatedNpcs = lists:keydelete(PID, 1, NPC),
-	    message_players(Players, [Name, "has been killed!"]),
+	    message_players(Players, [Name, " has been killed!"]),
 
 	    stop_attack_players(Players, Name),
 
@@ -392,11 +393,19 @@ handle_cast({say, PlayerPID, Message}, State=#state{players=Players}) ->
 
 
 handle_cast({respawn, RespawnTime}, State=#state{npc=NPC, dead_npc=DeadNPC, 
-                                                 data=Data}) ->
+                                                 data=Data, players=Players}) ->
     NpcsThatCanSpawn = database:find_npc(Data#zone.level_range, Data#zone.habitat),
     Id = random_element(NpcsThatCanSpawn),
     Pid = npc_sup:start_npc(Id, self()),
     Name = npc:get_name(Pid),
+
+    [npc:player_enter(Pid, Name) || {_,Name} <- Players],
+    message_players(Players, ["A ", Name, " has ", 
+			      random_element(
+				["emerged from the bushwork",
+				 "sprung from the ground",
+				 "descended from the heavens",
+				 "appeared from thin air"])]),
 
     UpdatedDeadNPC = lists:keydelete(RespawnTime, 1, DeadNPC),
     UpdatedNPC = [{Pid, Name, Id} | NPC],
@@ -417,6 +426,9 @@ handle_cast(Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info({'EXIT', _From, _Reason}, State) ->
+    {stop, normal, State};
+
 handle_info(Info, State) ->
     io:fwrite("Unknown info to zone ~p: ~p~n", [self(), Info]),
     {noreply, State}.
@@ -434,8 +446,6 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{players=Players, npc=NPC, 
                           dead_npc=DeadNpc, data=Data}) ->
-
-    io:fwrite("Zone ~p shutting down~n", [Data#zone.id]),
 
     [player:kick(PlayerPID) || {PlayerPID, _} <- Players],
     [npc_sup:stop_npc(npc:get_ref(Pid)) || {Pid, _, _} <- NPC],
@@ -600,6 +610,8 @@ fetch() ->
     receive
         Anything ->
             Anything
+    after 100 ->
+	    no_message
     end.
 
 flush() ->
@@ -736,7 +748,7 @@ zone_logout_test_() ->
 		   handle_cast({logout, self()}, 
 			       #state{players=[{self(), "Arne"}],
 				      data=#zone{id=8, exits=[]}})),
-
+     
      ?_assertEqual({'$gen_cast', {zone_inactive, 8}},
 		   fetch())
     ].
