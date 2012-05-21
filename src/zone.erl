@@ -363,14 +363,17 @@ handle_cast({death, PID}, State = #state{players=Players, npc=NPC,
 	    inactivate_if_empty(UpdatedPlayers, Id),
             playermaster:broadcast([Name, " has been slain!"]),
 
-            %% @todo perhaps tell npcs as well?
-            %% message_players(UpdatedPlayers, stop_attack, Name),
+	    stop_attack_players(UpdatedPlayers, Name),
+	    stop_attack_npcs(NPC, Name),
+
             {noreply, State#state{players=UpdatedPlayers}};
 
 	npc ->
             npc_sup:stop_npc(npc:get_ref(PID)),
 	    UpdatedNpcs = lists:keydelete(PID, 1, NPC),
 	    message_players(Players, [Name, "has been killed!"]),
+
+	    stop_attack_players(Players, Name),
 
             RespawnDelay = 20000,
             RespawnTime = time_add(now(), RespawnDelay),
@@ -511,6 +514,18 @@ find_target(Target, #state{players=Players, npc=NPC}) ->
     	    {npc, Pid}
     end.
 
+%% @doc Sends stop_attack message to all players
+stop_attack_players([{PlayerPID, _}|Rest], Name) ->
+    player:stop_attack(PlayerPID, Name),
+    stop_attack_players(Rest, Name);
+stop_attack_players([], _) -> ok.
+
+%% @doc Sends stop_attack message to all npcs
+stop_attack_npcs([{PlayerPID, _, _}|Rest], Name) ->
+    npc:stop_attack(PlayerPID, Name),
+    stop_attack_npcs(Rest, Name);
+stop_attack_npcs([], _) -> ok.
+
 %% @doc Constructs a "look" message
 -spec look_message(State :: state()) -> string().
 look_message(#state{players=Players, npc=NPC, data=Data}) ->
@@ -574,7 +589,6 @@ random_element(List) ->
 test_setup() ->
     database_setup(),
     register(zonemaster, self()),
-    %%register(playermaster, self()),  %%cant register playermaster..
     ok.
 
 database_setup() ->
@@ -788,39 +802,28 @@ zone_attack_test_() ->
      end].
 
 zone_death_test_() ->
-    [
-     ?_assertEqual({noreply, #state{players=[], data=#zone{id=7, exits=[]}}},
+    [?_assertEqual({noreply, #state{players=[], data=#zone{id=8, exits=[]}}},
 		   handle_cast({death, self()}, 
 			       #state{players=[{self(), "Arne"}],
-				      data=#zone{id=7, exits=[]}})),
+				      data=#zone{id=8, exits=[]}})),
 
-     ?_assertEqual({'$gen_cast', {zone_inactive, 7}}, fetch()),
-
-
+     ?_assertEqual({'$gen_cast', {zone_inactive, 8}}, fetch()),
 
      fun () ->
+
 	     handle_cast({death, self()}, 
-			 #state{players=[{self(),"Kurt"}, {self(),"Allan"}], 
-				data=#zone{id=5, exits=[]}})
-	     %%?assertEqual({'$gen_cast',  {broadcast, 
-	     %%		["Kurt", " has been slain!"]}}, fetch())
+			 #state{data=#zone{id=17, desc="A room!", exits=[{south,5}]}, 
+				players=[{self(),"Kurt"},{self(),"Gunnar"}], 
+				npc=[]}),
 
-     end]. %% bytte ut "," mot "].", ska ändras tillbaka när testen fixas
-
-%%===================================================================================
-%%     Eftersom playermaster inte har iformation om spelarna som kommer inte 
-%%     broadcasten inte fungera, eller tänkter jag fel? Dvs i det här testfallet
-%%     skickas inget meddelande från playermaster
-%%===================================================================================
-%%     ?_assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())].
-
+	     ?assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())
+     end].
 
 zone_test_() ->
     [?_assertEqual(" arrives from south", format_arrival(north)),
      ?_assertEqual(" arrives from west", format_arrival(east)),
      ?_assertEqual(" arrives from north", format_arrival(south)),
      ?_assertEqual(" arrives from east", format_arrival(west)),
-     ?_assertEqual(" logged in", format_arrival(login))
-    ].
+     ?_assertEqual(" logged in", format_arrival(login))].
 
     
