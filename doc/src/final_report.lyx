@@ -151,15 +151,183 @@ Inledning
 \end_layout
 
 \begin_layout Standard
-En inledning
+Ett MUD (Multi User Dungeon) är ett textbaserat flerspelarspel där spelare
+ utför handlingar genom att skriva dem (såsom 
+\begin_inset Quotes sld
+\end_inset
+
+go north
+\begin_inset Quotes srd
+\end_inset
+
+ eller 
+\begin_inset Quotes sld
+\end_inset
+
+attack Goblin
+\begin_inset Quotes srd
+\end_inset
+
+).
+ Världen är uppdelad i 
+\emph on
+zoner
+\emph default
+, och varje spelare befinner sig i en av världens zoner åt gången, och kan
+ förflytta sig till intilliggande zoner.
 \end_layout
 
 \begin_layout Subsection
-Nåt
+Syfte
+\end_layout
+
+\begin_layout Standard
+Syftet med projektet är att konstruera ett 
+\emph on
+MUD
+\emph default
+ med fokus på samtidighet för att kunna skala på multiprocessorsystem.
+\end_layout
+
+\begin_layout Subsection
+Målsättning
+\end_layout
+
+\begin_layout Subsection
+Problemformulering
+\end_layout
+
+\begin_layout Subsection
+Avgränsningar
 \end_layout
 
 \begin_layout Section
 Kid-MUD
+\end_layout
+
+\begin_layout Standard
+När man loggar in i systemet så anger man namn på den karaktär man vill
+ spela.
+ Om karaktären inte finns så skapas den.
+ Efter dess så anländer man i en zon.
+ När man anländer till en zon så får man en beskrivning av hur zonen ser
+ ut, vilka andra spelare och icke-spelare (NPC-er) som står där samt vart
+ man kan gå (se Figur 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:loggar-in"
+
+\end_inset
+
+).
+ Denna information kan man få upprepad för sig genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+look
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Man kan också få endast raden om vart man kan gå genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+exits
+\begin_inset Quotes srd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+Name?> 
+\color red
+Gustav
+\end_layout
+
+\begin_layout Plain Layout
+Welcome to Kid-MUD!
+\end_layout
+
+\begin_layout Plain Layout
+You are on the bridge that connects the town to the outside world.
+ Beneath the bridge runs a mighty river and to the south you see a large
+ waterfall pouring down huge amounts of water from the tall mountain.
+ The sound of the waterfall is almost deafening.
+ To the north you can see the river flowing towards the great sea.
+ To the west you have the town and to the east you see the road continues
+ to follow along the foot of the mountain.
+\end_layout
+
+\begin_layout Plain Layout
+Here stands a Frog 
+\end_layout
+
+\begin_layout Plain Layout
+There are exits to east, west
+\end_layout
+
+\begin_layout Plain Layout
+?> 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+När du loggar in
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:loggar-in"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+När man väl är i en zon så finns det en del saker att göra.
+ Man kan till exempel 
 \end_layout
 
 \begin_layout Section
@@ -188,10 +356,6 @@ Reflektion
 
 \begin_layout Section
 Installation och fortsatt utveckling
-\end_layout
-
-\begin_layout Standard
-
 \end_layout
 
 \end_body
