@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg, Michael Bergroth and Eric ArnerlÃ¶v
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -31,11 +31,13 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link(integer(),pid(),term()) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
+-spec start_link(integer(), pid(), term()) -> {ok, pid()} | 
+					      ignore | 
+					      {error, term()}.
 start_link(Id, Zone, Ref) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Id, Zone, Ref], []).
+    gen_server:start_link(?MODULE, [Id, Zone, Ref], []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -116,7 +118,7 @@ message(_, _) -> ok.
 %%--------------------------------------------------------------------
 init([Id, Zone, Ref]) ->
     Data = database:read_npc(Id),
-    {ok, {Ref, Zone, Data, {normal, none, none}}}.
+    {ok, {Ref, Zone, Data, {erlang:now(), Data#npc.health}, {normal, none, none}}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -133,10 +135,10 @@ init([Id, Zone, Ref]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call(get_ref, _From, State =
-	   {Ref, _Zone, _Data, _CombatState}) ->
-    {reply, Ref, State} ;
+	   {Ref, _Zone, _Data, _Health, _CombatState}) ->
+    {reply, Ref, State};
 
-handle_call(get_name, _From, State = {_,_,#npc{name=Name},_}) ->
+handle_call(get_name, _From, State = {_, _, #npc{name=Name}, _, _}) ->
     {reply, Name, State}.
 
 %%--------------------------------------------------------------------
@@ -150,33 +152,35 @@ handle_call(get_name, _From, State = {_,_,#npc{name=Name},_}) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({damage, Damage, Attacker}, State = 
-		{Ref, Zone, Data, {NpcStatus, _Target, _AttackTimer}}) ->
-    NewData = Data#npc{health={erlang:now(),
-			       get_health(Data) - Damage,
-			       element(3, Data#npc.health)}},
-    {_,Health,_} = NewData#npc.health,
+		{Ref, Zone, Data, CurrentHealth, 
+		 CombatState = {NpcStatus, _Target, AttackTimer}}) ->
+    NewHealth = {erlang:now(),
+		 get_health(CurrentHealth, Data#npc.health) - Damage},
+    {_,Health} = NewHealth,
     if 
 	Health > 0.0 ->
 	    if
 		NpcStatus =:= normal ->
+		    AttackSpeed = round(Data#npc.attack_speed * 1000),
 		    {_, NewAttackTimer} = 
-			timer:send_interval(2000, {'$gen_cast', 
-						   {attack, Attacker}}),
-		    {noreply, {Ref, Zone, NewData, {combat, Attacker, 
-					       NewAttackTimer}}};
+			timer:send_interval(AttackSpeed, 
+					    {'$gen_cast', {attack, Attacker}}),
+		    {noreply, {Ref, Zone, Data, NewHealth, {combat, Attacker, 
+							    NewAttackTimer}}};
 		NpcStatus =:= combat ->
-		    {noreply, State}
+		    {noreply, {Ref, Zone, Data, NewHealth, CombatState}}
 	    end;
 	Health =< 0.0 ->    
 	    zone:death(Zone, self()),
-	    {noreply, State}
+	    timer:cancel(AttackTimer),
+	    {noreply, {Ref, Zone, Data, CurrentHealth, {normal, none, none}}}
     end;
 
 handle_cast({attack, NewTarget}, State =  
-	    {_Ref, Zone, _Data, _CombatState}) ->
+		{_Ref, Zone, Data, _CurrentHealth, _CombatState}) ->
     ToHit = random:uniform(100),
     if ToHit > 20 ->
-	    Damage = 4 + random:uniform(6);
+	    Damage = Data#npc.damage + random:uniform(6);
        ToHit =< 20 -> 
 	    Damage = miss
     end,
@@ -184,22 +188,24 @@ handle_cast({attack, NewTarget}, State =
     {noreply, State};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
-		{Ref, Zone, Data, {_, Target, AttackTimer}}) ->
+		{Ref, Zone, Data, CurrentHealth, {_, Target, AttackTimer}}) ->
     if 
 	ZoneTarget =:= Target ->
 	    timer:cancel(AttackTimer),
-	    {noreply, {Ref, Zone, Data, {normal, none, none}}};
+	    {noreply, {Ref, Zone, Data, CurrentHealth, {normal, none, none}}};
 	ZoneTarget =/= Target ->
 	    {noreply, State}    
     end;
 
 handle_cast({player_enter, Name}, State =
-		{Ref, Zone, Data, {NpcStatus, _Target, _AttackTimer}}) ->
+		{_Ref, Zone, Data, _CurrentHealth, 
+		 {NpcStatus, _Target, _AttackTimer}}) ->
     case {Data#npc.disp, NpcStatus} of 
 	{hostile, normal} ->
 	    {_, NewAttackTimer} = 
 		timer:send_interval(2000, {'$gen_cast', {attack, Name}}),
-	    {noreply, {Ref, Zone, Data, {combat, Name, NewAttackTimer}}};
+	    {noreply, {_Ref, Zone, Data, _CurrentHealth,
+		       {combat, Name, NewAttackTimer}}};
 	{neutral, _} -> 
 	    {noreply, State};
 	{_, combat} ->
@@ -273,25 +279,27 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 %% @doc Calculates the current health of a NPC
--spec get_health(npc()) -> float().
-get_health(#npc{health={Time, Health, MaxHealth}}) ->
+-spec get_health({erlang:timestamp(), float()}, float()) -> float().
+get_health({Time, Health}, MaxHealth) ->
     min(Health + timer:now_diff(now(), Time) / 6000000.0, MaxHealth).
 
 %%%===================================================================
 %%% EUnit Tests
 %%%===================================================================
 
+
 test_setup()->
     mnesia:start(),
     database:create_tables([]).
 
+%% @hidden
 fetch() ->
     receive
         Anything ->
             Anything
     end.
 
-
+%% @hidden
 flush() ->
     receive 
 	_ -> flush()
@@ -299,39 +307,124 @@ flush() ->
 	    ok
     end.
 
-
 npn_test_()->
     {setup, fun test_setup/0,
      [
 
-fun ()->
+      fun ()->
 	      handle_cast({consider,self(),120},{a,a, {a,a,a,a,100,10,a,a,a},a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"Seems to be an easy fight!"}}),
 	      flush()
-end,
+      end,
 
       fun ()->
 	      handle_cast({consider,self(),1000},{a,a, {a,a,a,a,100,10,a,a,a},a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"This seems to be a very easy fight!"}}),
 	      flush()
-end,
+      end,
 
       fun ()->
 	      handle_cast({consider,self(),76},{a,a, {a,a,a,a,100,10,a,a,a},a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"It seems this will be a hard fight.."}}),
 	      flush()
-end,
+      end,
 
-       fun ()->
+      fun ()->
 	      handle_cast({consider,self(),1},{a,a, {a,a,a,a,100,10,a,a,a},a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"This is going to be very hard..."}}),
 	      flush()
-end,
+      end,
 
       fun ()->
 	      handle_cast({consider,self(),100},{a,a, {a,a,a,a,100,10,a,a,a},a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"Seems like an even fight."}}),
 	      flush()
-      end]}.
-	      
-			   
+      end,
+      fun() ->
+	      Npc = #npc{health = 30.0, attack_speed = 1.0},
+	      CurrentHealth = {erlang:now(), 30.0},
+	      CombatState = {normal, none, none},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({damage, 10, "foo"}, State),
+	      ?assertEqual(noreply, element(1, Value)),
+	      ?assertEqual(ref,     element(1, element(2, Value))),
+	      ?assertEqual(self(),  element(2, element(2, Value))),
+	      ?assertEqual(Npc,     element(3, element(2, Value))),
+	      ?assertEqual(20,      round(element(2, element(4, element(2, Value))))),
+	      ?assertEqual(combat,  element(1, element(5, element(2, Value)))),
+	      ?assertEqual("foo",   element(2, element(5, element(2, Value))))
+      end,
+      fun() ->
+	      Npc = #npc{health = 30.0, attack_speed = 1.0},
+	      CurrentHealth = {erlang:now(), 30.0},
+	      CombatState = {normal, none, none},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({damage, 40, "foo"}, State),
+	      ?assertEqual({noreply, State}, Value),
+	      ?assertEqual({'$gen_cast', {death, self()}}, fetch())
+      end,
+      fun() ->
+	      Npc = #npc{damage = 3},
+	      CurrentHealth = whatever,
+	      CombatState = whatever,
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({attack, "foo"}, State),
+	      ?assertEqual({noreply, State}, Value),
+	      ?assertEqual({'$gen_cast', {attack, self(), "foo", 8}}, fetch()),
+	      Value2 = handle_cast({attack, "foo"}, State),
+	      ?assertEqual({noreply, State}, Value2),
+	      ?assertEqual({'$gen_cast', {attack, self(), "foo", 7}}, fetch())
+      end,
+      fun() ->
+	      Npc = #npc{},
+	      CurrentHealth = whatever,
+	      CombatState = {normal, none, none},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({stop_attack, "foo"}, State),
+	      ?assertEqual({noreply, State}, Value)
+      end,
+      fun() ->
+	      Npc = #npc{},
+	      CurrentHealth = whatever,
+	      {_, Timer} = timer:send_interval(1000, 
+					       {'$gen_cast', {attack, "foo"}}),
+	      CombatState = {combat, "foo", Timer},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({stop_attack, "foo"}, State),
+	      ?assertEqual({noreply, {ref, self(), Npc, CurrentHealth, 
+				      {normal, none, none}}}, 
+			   Value),
+	      flush()
+      end,
+      fun() ->
+	      Npc = #npc{disp = neutral},
+	      CurrentHealth = whatever,
+	      CombatState = {normal, none, none},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({player_enter, "foo"}, State),
+	      ?assertEqual({noreply, State}, Value)
+      end,
+      fun() ->
+	      Npc = #npc{disp = hostile},
+	      CurrentHealth = whatever,
+	      CombatState = {combat, some_name, some_timer},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({player_enter, "foo"}, State),
+	      ?assertEqual({noreply, State}, Value)
+      end,
+      fun() ->
+	      Npc = #npc{disp = hostile},
+	      CurrentHealth = whatever,
+	      CombatState = {normal, none, none},
+	      State = {ref, self(), Npc, CurrentHealth, CombatState},
+	      Value = handle_cast({player_enter, "foo"}, State),
+	      ?assertEqual(noreply, element(1, Value)),
+	      ?assertEqual(ref,     element(1, element(2, Value))),
+	      ?assertEqual(self(),  element(2, element(2, Value))),
+	      ?assertEqual(Npc,     element(3, element(2, Value))),
+	      ?assertEqual(whatever,element(4, element(2, Value))),
+	      ?assertEqual(combat,  element(1, element(5, element(2, Value)))),
+	      ?assertEqual("foo",   element(2, element(5, element(2, Value))))
+      end
+     ]}.
+

@@ -188,6 +188,7 @@ say(Zone, PlayerPID, Message) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Id]) ->
+    process_flag(trap_exit, true),
     Data = database:read_zone(Id),
     Zone = self(),
     Now = now(),
@@ -212,14 +213,14 @@ init([Id]) ->
 
     NPC = lists:map(
 	    fun(Npc) -> 
-		    Id = case Npc of 
+		    NpcId = case Npc of 
 			     {dead, _} -> 
 				 random_element(NpcsThatCanSpawn);
-                             Id -> Id
+                             NId -> NId
 			 end,
-		    Pid = npc_sup:start_npc(Id, Zone),
+		    Pid = npc_sup:start_npc(NpcId, Zone),
 		    Name = npc:get_name(Pid),
-		    {Pid, Name, Id}		
+		    {Pid, Name, NpcId}		
 	      end,
 	      AliveIds),
     
@@ -327,7 +328,7 @@ handle_cast({kick, Name}, State = #state{players=Players}) ->
 handle_cast({attack, AttackerPID, Target, Damage}, 
 	    State = #state{players=Players}) -> 
 
-    {_,Attacker} = get_name(AttackerPID, State),
+    {AttackerType, Attacker} = get_name(AttackerPID, State),
     case find_target(Target, State) of 
         {TargetType, TargetPID} ->
             Bystanders = lists:keydelete(TargetPID, 1, 
@@ -335,13 +336,13 @@ handle_cast({attack, AttackerPID, Target, Damage},
             case Damage of
                 miss ->
                     message_players(Bystanders, [Attacker, " misses ", Target]),
-                    TargetType:message(AttackerPID, ["You miss your attack on ", Target]),
+                    AttackerType:message(AttackerPID, ["You miss your attack on ", Target]),
                     TargetType:message(TargetPID, [Attacker, " misses his attack on YOU"]);
                 
                 Damage ->
                     message_players(Bystanders, [Attacker, " hits ", Target,
                                                  " for ", integer_to_list(Damage)]),
-                    TargetType:message(AttackerPID, ["You hit ", Target, " for ",
+                    AttackerType:message(AttackerPID, ["You hit ", Target, " for ",
                                                      integer_to_list(Damage)]),
                     TargetType:damage(TargetPID, Damage, Attacker)
             end,
@@ -363,14 +364,17 @@ handle_cast({death, PID}, State = #state{players=Players, npc=NPC,
 	    inactivate_if_empty(UpdatedPlayers, Id),
             playermaster:broadcast([Name, " has been slain!"]),
 
-            %% @todo perhaps tell npcs as well?
-            %% message_players(UpdatedPlayers, stop_attack, Name),
+	    stop_attack_players(UpdatedPlayers, Name),
+	    stop_attack_npcs(NPC, Name),
+
             {noreply, State#state{players=UpdatedPlayers}};
 
 	npc ->
             npc_sup:stop_npc(npc:get_ref(PID)),
 	    UpdatedNpcs = lists:keydelete(PID, 1, NPC),
-	    message_players(Players, [Name, "has been killed!"]),
+	    message_players(Players, [Name, " has been killed!"]),
+
+	    stop_attack_players(Players, Name),
 
             RespawnDelay = 20000,
             RespawnTime = time_add(now(), RespawnDelay),
@@ -389,11 +393,19 @@ handle_cast({say, PlayerPID, Message}, State=#state{players=Players}) ->
 
 
 handle_cast({respawn, RespawnTime}, State=#state{npc=NPC, dead_npc=DeadNPC, 
-                                                 data=Data}) ->
+                                                 data=Data, players=Players}) ->
     NpcsThatCanSpawn = database:find_npc(Data#zone.level_range, Data#zone.habitat),
     Id = random_element(NpcsThatCanSpawn),
     Pid = npc_sup:start_npc(Id, self()),
     Name = npc:get_name(Pid),
+
+    [npc:player_enter(Pid, Name) || {_,Name} <- Players],
+    message_players(Players, ["A ", Name, " has ", 
+			      random_element(
+				["emerged from the bushwork",
+				 "sprung from the ground",
+				 "descended from the heavens",
+				 "appeared from thin air"])]),
 
     UpdatedDeadNPC = lists:keydelete(RespawnTime, 1, DeadNPC),
     UpdatedNPC = [{Pid, Name, Id} | NPC],
@@ -414,6 +426,9 @@ handle_cast(Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info({'EXIT', _From, _Reason}, State) ->
+    {stop, normal, State};
+
 handle_info(Info, State) ->
     io:fwrite("Unknown info to zone ~p: ~p~n", [self(), Info]),
     {noreply, State}.
@@ -431,8 +446,6 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{players=Players, npc=NPC, 
                           dead_npc=DeadNpc, data=Data}) ->
-
-    io:fwrite("Zone ~p shutting down~n", [Data#zone.id]),
 
     [player:kick(PlayerPID) || {PlayerPID, _} <- Players],
     [npc_sup:stop_npc(npc:get_ref(Pid)) || {Pid, _, _} <- NPC],
@@ -511,6 +524,18 @@ find_target(Target, #state{players=Players, npc=NPC}) ->
     	    {npc, Pid}
     end.
 
+%% @doc Sends stop_attack message to all players
+stop_attack_players([{PlayerPID, _}|Rest], Name) ->
+    player:stop_attack(PlayerPID, Name),
+    stop_attack_players(Rest, Name);
+stop_attack_players([], _) -> ok.
+
+%% @doc Sends stop_attack message to all npcs
+stop_attack_npcs([{PlayerPID, _, _}|Rest], Name) ->
+    npc:stop_attack(PlayerPID, Name),
+    stop_attack_npcs(Rest, Name);
+stop_attack_npcs([], _) -> ok.
+
 %% @doc Constructs a "look" message
 -spec look_message(State :: state()) -> string().
 look_message(#state{players=Players, npc=NPC, data=Data}) ->
@@ -574,7 +599,6 @@ random_element(List) ->
 test_setup() ->
     database_setup(),
     register(zonemaster, self()),
-    %%register(playermaster, self()),  %%cant register playermaster..
     ok.
 
 database_setup() ->
@@ -586,6 +610,8 @@ fetch() ->
     receive
         Anything ->
             Anything
+    after 100 ->
+	    no_message
     end.
 
 flush() ->
@@ -722,7 +748,7 @@ zone_logout_test_() ->
 		   handle_cast({logout, self()}, 
 			       #state{players=[{self(), "Arne"}],
 				      data=#zone{id=8, exits=[]}})),
-
+     
      ?_assertEqual({'$gen_cast', {zone_inactive, 8}},
 		   fetch())
     ].
@@ -749,39 +775,33 @@ zone_attack_test_() ->
 	     ?assertEqual({'$gen_cast', {damage, 1, "Kurt"}}, fetch())
      end,
 
-%%===================================================================================
-%% Utdaterat test eftersom NPCn inte ligger i zonen. Ska skrivas om
-%%===================================================================================
-%%      fun () ->
-%% 	     handle_cast({attack, self(), "Ghost", 10}, 
-%% 			 {[{self(),"Kurt"},{self(),"Gunnar"}],
-%% 			  #zone{id=5, exits=[], npc=[{npc,1,"Ghost", neutral,{erlang:now(), 30.0, 30.0}, 3}]}}),
+     fun () ->
 
-%% 	     {'$gen_cast', {message, Message}} = fetch(),
-%% 	     ?assertEqual("Kurt hits Ghost for 10", lists:flatten(Message)),
-%% 	     {'$gen_cast', {message, Message2}} = fetch(),
-%% 	     ?assertEqual("You hit Ghost for 10", lists:flatten(Message2))
-%% 	     %%{'$gen_cast', {message, Message3}} = fetch()
-%% 	     %%?assertEqual("Ghost has been killed!", lists:flatten(Message3)),
-%% 	     %%{'$gen_cast', {message, Message4}} = fetch(),
-%% 	     %%?assertEqual("Ghost has been killed!", lists:flatten(Message4)),
-%% 	     %%?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
-%% 	     %%?assertEqual({'$gen_cast', {stop_attack, "Ghost"}}, fetch())
-%%      end,
-%%===================================================================================
+	     handle_cast({attack, self(), "Goblin", 10}, 
+			 #state{data=#zone{id=17, desc="A room!", exits=[{south,5}]}, 
+				players=[{self(),"Kurt"},{self(),"Gunnar"}], 
+				npc=[{self(), "Goblin", 4}]}),
+
+	     {'$gen_cast', {message, Message2}} = fetch(),
+	     ?assertEqual("You hit Goblin for 10", lists:flatten(Message2)),
+
+	     ?assertEqual({'$gen_cast', {damage, 10, "Kurt"}}, fetch())
+
+
+     end,
 
      fun () ->
 	     handle_cast({attack, self(), "Scurt", 10}, 
 			 #state{players=[{self(),"Kurt"}], 
-				 data=#zone{id=2, exits=[{north,1},{south,2}]}}),
+				data=#zone{id=2, exits=[{north,1},{south,2}]}}),
 	     ?assertEqual({'$gen_cast', {stop_attack, "Scurt"}}, fetch())
      end,
 
      fun () ->
 	     handle_cast({attack, self(), "Dingo", miss}, 
 			 #state{players=[{self(),"Kurt"}, 
-					  {self(),"Dingo"}, {self(), "Observer"}],
-				 data=#zone{id=5, exits=[]}}),
+					 {self(),"Dingo"}, {self(), "Observer"}],
+				data=#zone{id=5, exits=[]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("Kurt misses Dingo", lists:flatten(Message)),
 	     {'$gen_cast', {message, Message2}} = fetch(),
@@ -794,39 +814,28 @@ zone_attack_test_() ->
      end].
 
 zone_death_test_() ->
-    [
-     ?_assertEqual({noreply, #state{players=[], data=#zone{id=7, exits=[]}}},
+    [?_assertEqual({noreply, #state{players=[], data=#zone{id=8, exits=[]}}},
 		   handle_cast({death, self()}, 
 			       #state{players=[{self(), "Arne"}],
-				      data=#zone{id=7, exits=[]}})),
+				      data=#zone{id=8, exits=[]}})),
 
-     ?_assertEqual({'$gen_cast', {zone_inactive, 7}}, fetch()),
-
-
+     ?_assertEqual({'$gen_cast', {zone_inactive, 8}}, fetch()),
 
      fun () ->
+
 	     handle_cast({death, self()}, 
-			 #state{players=[{self(),"Kurt"}, {self(),"Allan"}], 
-				data=#zone{id=5, exits=[]}})
-	     %%?assertEqual({'$gen_cast',  {broadcast, 
-	     %%		["Kurt", " has been slain!"]}}, fetch())
+			 #state{data=#zone{id=17, desc="A room!", exits=[{south,5}]}, 
+				players=[{self(),"Kurt"},{self(),"Gunnar"}], 
+				npc=[]}),
 
-     end]. %% bytte ut "," mot "].", ska ändras tillbaka när testen fixas
-
-%%===================================================================================
-%%     Eftersom playermaster inte har iformation om spelarna som kommer inte 
-%%     broadcasten inte fungera, eller tänkter jag fel? Dvs i det här testfallet
-%%     skickas inget meddelande från playermaster
-%%===================================================================================
-%%     ?_assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())].
-
+	     ?assertEqual({'$gen_cast', {stop_attack, "Kurt"}}, fetch())
+     end].
 
 zone_test_() ->
     [?_assertEqual(" arrives from south", format_arrival(north)),
      ?_assertEqual(" arrives from west", format_arrival(east)),
      ?_assertEqual(" arrives from north", format_arrival(south)),
      ?_assertEqual(" arrives from east", format_arrival(west)),
-     ?_assertEqual(" logged in", format_arrival(login))
-    ].
+     ?_assertEqual(" logged in", format_arrival(login))].
 
     

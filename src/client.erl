@@ -20,7 +20,7 @@ connect() ->
                     loop(Server, Writer);
                 login_failed ->
                     Writer ! plz_die,
-                    io:fwrite("You cannot connect with name \"~p\"~n", [Name]),
+                    io:fwrite("You cannot connect with name \"~s\"~n", [Name]),
                     connect()
             end
     end.
@@ -41,7 +41,7 @@ connect(Node) ->
                     loop(Server, Writer); 
                 {server, login_failed} ->
                     Writer ! plz_die,
-                    io:fwrite("You cannot connect with name \"~p\"~n", [Name]),
+                    io:fwrite("You cannot connect with name \"~s\"~n", [Name]),
                     connect(Node)
             end
     end.
