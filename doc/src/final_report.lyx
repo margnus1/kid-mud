@@ -26,7 +26,16 @@
 \index_command default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize default
 \use_geometry false
 \use_amsmath 1
@@ -224,7 +233,11 @@ reference "fig:loggar-in"
 \begin_inset Quotes sld
 \end_inset
 
+
+\family typewriter
 look
+\family default
+
 \begin_inset Quotes srd
 \end_inset
 
@@ -233,7 +246,11 @@ look
 \begin_inset Quotes sld
 \end_inset
 
+
+\family typewriter
 exits
+\family default
+
 \begin_inset Quotes srd
 \end_inset
 
@@ -261,16 +278,22 @@ height_special "totalheight"
 status open
 
 \begin_layout Plain Layout
+
+\family typewriter
 Name?> 
 \color red
 Gustav
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 Welcome to Kid-MUD!
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 You are on the bridge that connects the town to the outside world.
  Beneath the bridge runs a mighty river and to the south you see a large
  waterfall pouring down huge amounts of water from the tall mountain.
@@ -281,14 +304,20 @@ You are on the bridge that connects the town to the outside world.
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 Here stands a Frog 
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 There are exits to east, west
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 ?> 
 \end_layout
 
@@ -327,7 +356,42 @@ name "fig:loggar-in"
 
 \begin_layout Standard
 När man väl är i en zon så finns det en del saker att göra.
- Man kan till exempel skriva
+ Man kan till exempel skriva 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+say 
+\emph on
+Meddelande
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+ för att säga saker till andra spelare i samma zon.
+ Man kan även prata privat med en godtyckig spelare genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+tell 
+\emph on
+Vem
+\emph default
+ 
+\emph on
+Meddelande
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
@@ -420,10 +484,6 @@ Inloggnings lösenord
  in.
  Detta för att unvika att oönskade personer får tillträde till karaktärer
  de inte får använda.
-\end_layout
-
-\begin_layout Itemize
-
 \end_layout
 
 \begin_layout Section
