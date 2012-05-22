@@ -360,61 +360,18 @@ Installation och fortsatt utveckling
 
 \begin_layout Standard
 De versioner av Erlang som använts är R15B01 och R15B.
- Koden finns att hämta på 
-\begin_inset CommandInset href
-LatexCommand href
-target "GitHub"
+ Koden finns att hämta på GitHub
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+github
+\end_layout
 
 \end_inset
 
 .
- Katalogstrukturen hos systemet är följande:
-\end_layout
-
-\begin_layout Itemize
-database
-\end_layout
-
-\begin_layout Itemize
-doc
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-html
-\end_layout
-
-\begin_layout Itemize
-pdf
-\end_layout
-
-\begin_layout Itemize
-src
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-ebin
-\end_layout
-
-\begin_layout Itemize
-include
-\end_layout
-
-\begin_layout Itemize
-neotoma
-\end_layout
-
-\begin_layout Itemize
-src
-\end_layout
-
-\begin_layout Itemize
-Makefile
-\end_layout
-
-\begin_layout Itemize
-README.txt
+ Katalogstrukturen hos systemet är följande[under construction]
 \end_layout
 
 \begin_layout Standard
