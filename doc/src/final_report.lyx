@@ -441,7 +441,7 @@ De versioner av Erlang som använts är R15B01 och R15B.
 status open
 
 \begin_layout Plain Layout
-github
+github-länk
 \end_layout
 
 \end_inset
@@ -451,7 +451,7 @@ github
 \end_layout
 
 \begin_layout Standard
-Systemet kompileras via Makefile med kommandot 
+Systemet använder sig av Makefile så kompilering görs med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -459,8 +459,7 @@ make
 \begin_inset Quotes srd
 \end_inset
 
-.
- EUnit-tester körs med kommandot 
+, EUnit-tester körs med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -476,26 +475,12 @@ make doc
 \begin_inset Quotes srd
 \end_inset
 
-.
- För att starta en server används kommandot 
-\begin_inset Quotes sld
-\end_inset
 
-make start_server
-\begin_inset Quotes srd
-\end_inset
+\end_layout
 
- och för en klient används kommandot 
-\begin_inset Quotes sld
-\end_inset
-
-make start_client
-\begin_inset Quotes srd
-\end_inset
-
-.
- Servern och klienten körs i en Erlang-prompt och därifrån ansluter man
- till en server genom att skriva 
+\begin_layout Standard
+Servern och klienten körs i en Erlang-prompt och därifrån ansluter man till
+ en server genom att skriva 
 \begin_inset Quotes sld
 \end_inset
 
