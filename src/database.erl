@@ -98,10 +98,29 @@ init() ->
     create_tables([{disc_copies, [node()]}]),
     mnesia:wait_for_tables([player, zone], 2000),
     maploader:load("priv/map"),
-    database:write_npc(#npc{id=1, name="Goblin", level=1, habitat=forest, disp=hostile}),
-    database:write_npc(#npc{id=2, name="Highwayman", level=1, habitat=road}),
-    database:write_npc(#npc{id=3, name="Mudcrab", level=1, habitat=beach}),
-    database:write_npc(#npc{id=4, name="Bat", level=1, habitat=cave}).
+    database:write_npc(#npc{id=1, name="Rabbit",       level=1, habitat=forest, disp=neutral, damage=1, health=20}),
+    database:write_npc(#npc{id=2, name="Goblin",       level=2, habitat=forest, disp=neutral, damage=2, health=30}),
+    database:write_npc(#npc{id=3, name="Goblin",       level=4, habitat=forest, disp=hostile, damage=4, health=35}),
+    database:write_npc(#npc{id=4, name="Goblin",       level=5, habitat=forest, disp=hostile, damage=6, health=55}),
+    database:write_npc(#npc{id=5, name="Troll",        level=6, habitat=forest, disp=hostile, damage=7, health=80}),
+    database:write_npc(#npc{id=6, name="Frog",         level=1, habitat=road,   disp=neutral, damage=1, health=10}),
+    database:write_npc(#npc{id=7, name="Traveler",     level=2, habitat=road,   disp=neutral, damage=2, health=25}),
+    database:write_npc(#npc{id=8, name="Traveler",     level=4, habitat=road,   disp=neutral, damage=4, health=40}),
+    database:write_npc(#npc{id=9, name="Highwayman",   level=7, habitat=road,   disp=hostile, damage=6, health=70}),
+    database:write_npc(#npc{id=10, name="Mudcrabling", level=1, habitat=beach,  disp=neutral, damage=2, health=15}),
+    database:write_npc(#npc{id=11, name="Mudcrab",     level=3, habitat=beach,  disp=neutral, damage=4, health=35}),
+    database:write_npc(#npc{id=12, name="Mudcrab",     level=5, habitat=beach,  disp=neutral, damage=5, health=60}),
+    database:write_npc(#npc{id=13, name="Crablord",    level=7, habitat=beach,  disp=hostile, damage=8, health=80}),
+    database:write_npc(#npc{id=14, name="Small Bat",   level=1, habitat=cave,   disp=neutral, damage=2, health=15}),
+    database:write_npc(#npc{id=15, name="Bat",         level=1, habitat=cave,   disp=neutral, damage=2, health=15}),
+    database:write_npc(#npc{id=16, name="Spider",      level=2, habitat=cave,   disp=neutral, damage=3, health=30}),
+    database:write_npc(#npc{id=17, name="Worm",        level=3, habitat=cave,   disp=neutral, damage=4, health=35}),
+    database:write_npc(#npc{id=18, name="Bat",         level=4, habitat=cave,   disp=hostile, damage=4, health=50}),
+    database:write_npc(#npc{id=19, name="Bat",         level=5, habitat=cave,   disp=hostile, damage=5, health=55}),
+    database:write_npc(#npc{id=20, name="Bat",         level=6, habitat=cave,   disp=hostile, damage=6, health=65}),
+    database:write_npc(#npc{id=21, name="Lynx",        level=7, habitat=cave,   disp=hostile, damage=7, health=75}),
+    database:write_npc(#npc{id=22, name="Bear",        level=8, habitat=cave,   disp=hostile, damage=9, health=90}),
+    database:write_npc(#npc{id=23, name="Dragon",      level=10, habitat=cave,  disp=hostile, damage=20, health=150}).
     
 
 %% @doc Performs first-time initialisation of database.

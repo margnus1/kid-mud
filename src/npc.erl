@@ -15,7 +15,7 @@
 
 %% API
 -export([start_link/3, get_ref/1, damage/3, stop_attack/2, player_enter/2,
-        message/2,consider/3, get_name/1]).
+        message/2, consider/3, get_name/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -212,7 +212,7 @@ handle_cast({player_enter, Name}, State =
 	    {noreply, State}
     end;    
 
-handle_cast({consider,PlayerPID,Player_health},State = {_, _, Data, _}) ->
+handle_cast({consider,PlayerPID,Player_health},State = {_, _, Data, _, _}) ->
     {_,_,_,_,Health,Damage,_,_,_} = Data,
     Temp_player_health_m_dmg = (Player_health * 10),
     Npc_dmg_health = Health * Damage,
@@ -364,16 +364,16 @@ npn_test_()->
 	      ?assertEqual({'$gen_cast', {death, self()}}, fetch())
       end,
       fun() ->
-	      Npc = #npc{damage = 3},
+	      Npc = #npc{damage = 10},
 	      CurrentHealth = whatever,
 	      CombatState = whatever,
 	      State = {ref, self(), Npc, CurrentHealth, CombatState},
 	      Value = handle_cast({attack, "foo"}, State),
 	      ?assertEqual({noreply, State}, Value),
-	      ?assertEqual({'$gen_cast', {attack, self(), "foo", 8}}, fetch()),
+	      ?assertEqual({'$gen_cast', {attack, self(), "foo", 14}}, fetch()),
 	      Value2 = handle_cast({attack, "foo"}, State),
 	      ?assertEqual({noreply, State}, Value2),
-	      ?assertEqual({'$gen_cast', {attack, self(), "foo", 7}}, fetch())
+	      ?assertEqual({'$gen_cast', {attack, self(), "foo", 13}}, fetch())
       end,
       fun() ->
 	      Npc = #npc{},

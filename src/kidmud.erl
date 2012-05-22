@@ -37,6 +37,7 @@
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
     database:init(),
+    random:seed(now()),
     case master_supervisor:start_link() of
 	{ok, Pid} ->
 	    {ok, Pid};
