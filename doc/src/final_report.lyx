@@ -327,7 +327,7 @@ name "fig:loggar-in"
 
 \begin_layout Standard
 När man väl är i en zon så finns det en del saker att göra.
- Man kan till exempel 
+ Man kan till exempel skriva
 \end_layout
 
 \begin_layout Section
@@ -432,6 +432,130 @@ Reflektion
 
 \begin_layout Section
 Installation och fortsatt utveckling
+\end_layout
+
+\begin_layout Standard
+De versioner av Erlang som använts är R15B01 och R15B.
+ Koden finns att hämta på 
+\begin_inset CommandInset href
+LatexCommand href
+target "GitHub"
+
+\end_inset
+
+.
+ Katalogstrukturen hos systemet är följande:
+\end_layout
+
+\begin_layout Itemize
+database
+\end_layout
+
+\begin_layout Itemize
+doc
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+html
+\end_layout
+
+\begin_layout Itemize
+pdf
+\end_layout
+
+\begin_layout Itemize
+src
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+ebin
+\end_layout
+
+\begin_layout Itemize
+include
+\end_layout
+
+\begin_layout Itemize
+neotoma
+\end_layout
+
+\begin_layout Itemize
+src
+\end_layout
+
+\begin_layout Itemize
+Makefile
+\end_layout
+
+\begin_layout Itemize
+README.txt
+\end_layout
+
+\begin_layout Standard
+Systemet kompileras via Makefile med kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+make
+\begin_inset Quotes srd
+\end_inset
+
+.
+ EUnit-tester körs med kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+make test
+\begin_inset Quotes srd
+\end_inset
+
+ samt EDoc-dokumentation genereras med kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+make doc
+\begin_inset Quotes srd
+\end_inset
+
+.
+ För att starta en server används kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+make start_server
+\begin_inset Quotes srd
+\end_inset
+
+ och för en klient används kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+make start_client
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Servern och klienten körs i en Erlang-prompt och därifrån ansluter man
+ till en server genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+client:connect(node).
+\begin_inset Quotes srd
+\end_inset
+
+ där 
+\begin_inset Quotes sld
+\end_inset
+
+node
+\begin_inset Quotes srd
+\end_inset
+
+ är adressen till servern.
+ Servern kan lämna vältet tomt för att ansluta till sin egna server.
 \end_layout
 
 \end_body
