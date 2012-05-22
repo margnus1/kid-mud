@@ -15,7 +15,7 @@
 
 %% API
 -export([start_link/3, get_ref/1, damage/3, stop_attack/2, player_enter/2,
-        message/2]).
+        message/2,consider/3, get_name/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -31,7 +31,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @spec start_link(integer(),pid(),term()) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(Id, Zone, Ref) ->
@@ -73,6 +73,23 @@ stop_attack(Npc, Target) ->
 player_enter(Npc, Name) ->
     gen_server:cast(Npc, {player_enter, Name}).
 
+%--------------------------------------------------------------------
+%% @doc
+%% Compare the player and the npc by the health and dmg and return how "difficult"
+%% it will be to fight that npc. The return message will only be sent to
+%% the player that typed consider "npc name". If the npc doesn't exits,
+%% a message will be send back to the player, telling that the npc typed 
+%% by the player doesn't exists.
+%% @end
+%%--------------------------------------------------------------------
+%% -spec consider(pid(),pid(),integer()) -> ok.
+consider(Npc,PlayerPID,Player_health) ->
+    gen_server:cast(Npc, {consider,PlayerPID, Player_health}).
+
+%% @doc Returns the name for the npc with pid PID
+-spec get_name(pid()) -> string().
+get_name(PID) ->
+    gen_server:call(PID, get_name).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -117,7 +134,10 @@ init([Id, Zone, Ref]) ->
 %%--------------------------------------------------------------------
 handle_call(get_ref, _From, State =
 	   {Ref, _Zone, _Data, _CombatState}) ->
-    {reply, Ref, State}.
+    {reply, Ref, State} ;
+
+handle_call(get_name, _From, State = {_,_,#npc{name=Name},_}) ->
+    {reply, Name, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -186,6 +206,27 @@ handle_cast({player_enter, Name}, State =
 	    {noreply, State}
     end;    
 
+handle_cast({consider,PlayerPID,Player_health},State = {_, _, Data, _}) ->
+    {_,_,_,_,Health,Damage,_,_,_} = Data,
+    Temp_player_health_m_dmg = (Player_health * 10),
+    Npc_dmg_health = Health * Damage,
+    Temp_result =  Temp_player_health_m_dmg / Npc_dmg_health,
+
+    case Temp_result of
+	Temp_result when Temp_result > 1.20 ->
+	   player:message(PlayerPID, "This seems to be a very easy fight!");
+	Temp_result when Temp_result > 1.10, Temp_result =< 1.20 ->
+	     player:message(PlayerPID, "Seems to be an easy fight!");
+	Temp_result when Temp_result >= 0.90, Temp_result =< 1.10 ->
+	     player:message(PlayerPID, "Seems like an even fight.");
+	Temp_result when Temp_result >= 0.75, Temp_result < 0.90 -> 
+	     player:message(PlayerPID, "It seems this will be a hard fight..");
+	Temp_result when Temp_result < 0.75 ->
+	     player:message(PlayerPID, "This is going to be very hard...")
+    end,
+
+    {noreply,State};
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -240,3 +281,57 @@ get_health(#npc{health={Time, Health, MaxHealth}}) ->
 %%% EUnit Tests
 %%%===================================================================
 
+test_setup()->
+    mnesia:start(),
+    database:create_tables([]).
+
+fetch() ->
+    receive
+        Anything ->
+            Anything
+    end.
+
+
+flush() ->
+    receive 
+	_ -> flush()
+    after 1 ->
+	    ok
+    end.
+
+
+npn_test_()->
+    {setup, fun test_setup/0,
+     [
+
+fun ()->
+	      handle_cast({consider,self(),120},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      ?assertEqual(fetch(),{'$gen_cast',{message,"Seems to be an easy fight!"}}),
+	      flush()
+end,
+
+      fun ()->
+	      handle_cast({consider,self(),1000},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      ?assertEqual(fetch(),{'$gen_cast',{message,"This seems to be a very easy fight!"}}),
+	      flush()
+end,
+
+      fun ()->
+	      handle_cast({consider,self(),76},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      ?assertEqual(fetch(),{'$gen_cast',{message,"It seems this will be a hard fight.."}}),
+	      flush()
+end,
+
+       fun ()->
+	      handle_cast({consider,self(),1},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      ?assertEqual(fetch(),{'$gen_cast',{message,"This is going to be very hard..."}}),
+	      flush()
+end,
+
+      fun ()->
+	      handle_cast({consider,self(),100},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      ?assertEqual(fetch(),{'$gen_cast',{message,"Seems like an even fight."}}),
+	      flush()
+      end]}.
+	      
+			   

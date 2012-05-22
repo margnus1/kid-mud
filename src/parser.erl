@@ -35,5 +35,6 @@ parse_test_() ->
      ?_assertEqual({attack, "Mikael"} , parse("attack Mikael")),
      ?_assertEqual({attack, "Michael"}, parse("kill Michael")),
      ?_assertEqual({say, "ед"}        , parse("say ед")),
+     ?_assertEqual({consider,"Player"}, parse("consider Player")),
      ?_assertEqual({tell, "Bo", "hey"}, parse("tell Bo hey")),
      ?_assertEqual(parse_error        , parse("go southish"))].

@@ -188,6 +188,30 @@ handle_cast({command, Command},
 	    timer:cancel(AttackTimer),
 	    {noreply, {Console, Zone, Data, {normal, none, none}}};
 
+
+	{consider,NPC_name} ->
+
+	    Console ! {message,"Considering.... "},
+	    Player_data = Data#player.health,
+	    %% Serach for the correct npc and send it to npc:consider
+	    {_,Player_health} = Player_data,
+	    Npc_target = zone:validate_target(Zone,NPC_name),
+	    
+	    case Npc_target of
+		false ->
+		    Console ! {message,["Cant find ", NPC_name, "."]};
+		{player,_} ->
+		    Console ! {message, "You can't consider other players."};
+		{npc,Pid} -> 
+		    npc:consider(Pid,self(),Player_health)
+	    end,
+
+	    {noreply,State};
+
+
+
+
+
 	{attack, NewTarget} ->
 	    if 
 		NewTarget =:= Data#player.name ->

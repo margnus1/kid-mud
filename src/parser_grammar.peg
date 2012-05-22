@@ -1,11 +1,16 @@
 %% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
 %% See the file license.txt for copying permission.
 
-command <- logout_command / exits_command / attack_command / say_command / tell_command / stop_command / look_command / move_command ;
+command <- logout_command / exits_command / attack_command / say_command / tell_command / stop_command / look_command / move_command / consider_command ;
 
 say_command <- "say " .* `
 [_, Letters] = Node,
 {say, unicode:characters_to_list(Letters)}
+`;
+
+consider_command <- "consider " .* `
+[_, Letters] = Node,
+{consider, unicode:characters_to_list(Letters)}
 `;
 
 attack_command <- ("attack " / "kill ") .* `
