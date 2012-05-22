@@ -350,6 +350,82 @@ Algoritmer och datastrukturer
 Förslag på förbättringar
 \end_layout
 
+\begin_layout Itemize
+\begin_inset Quotes sld
+\end_inset
+
+Command Autocompletion
+\begin_inset Quotes srd
+\end_inset
+
+ - istället för att behöva skriva all text fullständigt så kan det vara
+ behändigt att lägga till ett system som fyller i resten av ett t ex.
+ kommando som är halvt skrivet.
+ Detta är bara tillgängligt om det endast finns ett unikt 
+\begin_inset Quotes sld
+\end_inset
+
+slut
+\begin_inset Quotes srd
+\end_inset
+
+ på den text man skriver.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes sld
+\end_inset
+
+Nerstänging av server
+\begin_inset Quotes srd
+\end_inset
+
+ - När man inaktiverar servern så skall alla spelare som är inloggade få
+ ett medelande att server håller på att stängas ner och därför kommer de
+ loggas ut om x antal sekunder.
+ Sedan sparars världen och användaren kan ansluta till servern och komma
+ till där dom var precis innan servern gick ner.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes sld
+\end_inset
+
+Grafiska förbättringar
+\begin_inset Quotes srd
+\end_inset
+
+ - Olika 
+\begin_inset Quotes sld
+\end_inset
+
+typer
+\begin_inset Quotes srd
+\end_inset
+
+ av text skall vara i olika färger så det blir lättare att läsa, även att
+ man alltid ska kunna se hur mycket liv man har genom att det alltid står
+ längst ner i textrutan för att underlätta strider mellan spelaren och andra.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes sld
+\end_inset
+
+Inloggnings lösenord
+\begin_inset Quotes srd
+\end_inset
+
+ - Varje spelare får välja ett lösenord som de skall använda för att logga
+ in.
+ Detta för att unvika att oönskade personer får tillträde till karaktärer
+ de inte får använda.
+\end_layout
+
+\begin_layout Itemize
+
+\end_layout
+
 \begin_layout Section
 Reflektion
 \end_layout
