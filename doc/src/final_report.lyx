@@ -103,10 +103,7 @@ and
 \begin_inset Newline newline
 \end_inset
 
-910409-2672
- 
-\lang swedish
-
+910409-2672 
 \begin_inset ERT
 status open
 
@@ -124,10 +121,6 @@ and
 \end_inset
 
 840526-0194
-\end_layout
-
-\begin_layout Abstract
-Ett MUD (Multi User Dungeon) är ...
 \end_layout
 
 \begin_layout Standard
@@ -163,6 +156,42 @@ En inledning
 
 \begin_layout Subsection
 Nåt
+\end_layout
+
+\begin_layout Section
+Kid-MUD
+\end_layout
+
+\begin_layout Section
+Programmeringsspråk
+\end_layout
+
+\begin_layout Section
+Systemarkitektur
+\end_layout
+
+\begin_layout Section
+Samtidighet
+\end_layout
+
+\begin_layout Section
+Algoritmer och datastrukturer
+\end_layout
+
+\begin_layout Section
+Förslag på förbättringar
+\end_layout
+
+\begin_layout Section
+Reflektion
+\end_layout
+
+\begin_layout Section
+Installation och fortsatt utveckling
+\end_layout
+
+\begin_layout Standard
+
 \end_layout
 
 \end_body
