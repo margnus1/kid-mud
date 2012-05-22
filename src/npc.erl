@@ -180,7 +180,7 @@ handle_cast({attack, NewTarget}, State =
 		{_Ref, Zone, Data, _CurrentHealth, _CombatState}) ->
     ToHit = random:uniform(100),
     if ToHit > 20 ->
-	    Damage = Data#npc.damage + random:uniform(6);
+	    Damage = Data#npc.damage + random:uniform(1 + Data#npc.damage div 2) - 1;
        ToHit =< 20 -> 
 	    Damage = miss
     end,
