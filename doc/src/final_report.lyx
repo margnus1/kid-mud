@@ -187,7 +187,7 @@ zoner
 \end_layout
 
 \begin_layout Subsection
-Syfte
+Mål och Syfte
 \end_layout
 
 \begin_layout Standard
@@ -196,18 +196,24 @@ Syftet med projektet är att konstruera ett
 MUD
 \emph default
  med fokus på samtidighet för att kunna skala på multiprocessorsystem.
-\end_layout
-
-\begin_layout Subsection
-Målsättning
-\end_layout
-
-\begin_layout Subsection
-Problemformulering
+ Målet är att bygga ett fullt fungerande 
+\emph on
+MUD
+\emph default
+ med så många funktioner som vi hinner med.
 \end_layout
 
 \begin_layout Subsection
 Avgränsningar
+\end_layout
+
+\begin_layout Standard
+Vi valde att inte implementera ett Telnet-interface trots att detta är en
+ kännetecknande komponent hos ett 
+\emph on
+MUD
+\emph default
+ eftersom vi ville lägga fokus på samtidigheten och grundläggande funktionalitet.
 \end_layout
 
 \begin_layout Section
@@ -387,6 +393,82 @@ Vem
 Meddelande
 \family default
 \emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Man kan också attackera spelare och icke-spelare genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+attack 
+\emph on
+Vem
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+, och för att sluta slåss skriver man 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+stop
+\family default
+
+\begin_inset Quotes srd
+\end_inset
+
+, eller väntar på att offret dör.
+ Om man vill uppskatta sina chanser mot en icke-spelare kan man använda
+ kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+consider 
+\emph on
+Vem
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
+ När man inser att man aldrig kan vinna striden man är i så är det lämpligt
+ att fly.
+ För att gå till en annan zon så skriver man 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+go 
+\emph on
+Väderstreck
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Man kan bara gå i de riktningar som antyddes av 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+exits
+\family default
 
 \begin_inset Quotes srd
 \end_inset
