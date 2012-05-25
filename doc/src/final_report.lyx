@@ -494,6 +494,15 @@ Vi valde att skriva systemet i Erlang för att det är ett språk vi trodde
  Fördelarna är att det är väldigt lätt att skriva kod som utnyttjar samtidighet
  och att meddelandepassningen samt de lätta processerna i Erlang fungerar
  väldigt bra till sättet vi valde att lösa problemet på.
+ Vidare så var 
+\emph on
+Mnesia
+\emph default
+, som är en i Erlang inbyggd databas, mycket behändig för våra datalagringsbehov.
+\end_layout
+
+\begin_layout Standard
+Dessutom 
 \end_layout
 
 \begin_layout Section
@@ -900,8 +909,8 @@ status open
 \begin_layout Plain Layout
 \begin_inset CommandInset href
 LatexCommand href
-name "github.com"
-target "http://github.com"
+name "github.com/margnus1/kid-mud"
+target "http://github.com/margnus1/kid-mud"
 
 \end_inset
 
