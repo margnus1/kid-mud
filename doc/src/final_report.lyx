@@ -631,83 +631,80 @@ name "fig:moduler"
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
 \end_layout
 
 \begin_layout Description
-player.erl
-\end_layout
-
-\begin_deeper
-\begin_layout Standard
-player.erl är den modul som ligger emellan klienten och själva systemet.
- Alla kommandon som klienten skriver skickas till player som sedan tolkar
- kommandot med en parser och utför kommandot genom att skicka vidare meddelanden
- till andra moduler.
- player.erl håller även reda på spelarens status, såsom om man är i en strid
- och spelarens liv.
-\end_layout
-
-\end_deeper
-\begin_layout Description
-playermaster.erl
-\end_layout
-
-\begin_deeper
-\begin_layout Standard
-Tar hand om första anslutningen till servern från klienten.
- Använder sig av player_sup.erl att starta nya player-processer.
- Har även en lista över alla inloggade spelare och har funktioner för att
- skicka meddelanden till alla vid speciella händelser samt att spelare att
- kunna prata med en enskild person.
- 
-\end_layout
-
-\end_deeper
-\begin_layout Description
-player_sup.erl
-\end_layout
-
-\begin_deeper
-\begin_layout Standard
-En supervisor för alla player-processer.
-\end_layout
-
-\end_deeper
-\begin_layout Description
 client.erl
 \end_layout
 
 \begin_deeper
 \begin_layout Standard
-Denna modul startas av en spelare som vill spela och skickar vidare skrivna
- kommandon av spelaren samt tar emot meddelanden om vad som händer och skriver
+Denna modul startas av en spelare som vill spela och skickar vidare kommandon
+ skrivna av spelaren samt tar emot meddelanden om vad som händer och skriver
  ut dem på skärmen.
  
 \end_layout
 
 \end_deeper
 \begin_layout Description
-zone.erl
+player
 \end_layout
 
 \begin_deeper
 \begin_layout Standard
-zone.erl tar hand om det som rör en specifik zon.
- Den har data såsom närliggande zoners ID och listor över spelare och NPCs.
- Det är zonen som skickar ut meddelanden till andra spelare som säger vad
- som händer.
+player är den modul som ligger emellan klienten och själva systemet.
+ Alla kommandon som spelaren skriver skickas från client till player som
+ sedan tolkar kommandot med parser och utför kommandot genom att skicka
+ vidare meddelanden till andra moduler.
+ player håller även reda på spelarens status, såsom om man är i en strid
+ och spelarens liv.
 \end_layout
 
 \end_deeper
 \begin_layout Description
-zonemaster.erl
+playermaster
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+När en spelare loggar in så ber client playermaster om att få logga in.
+ Om det accepteras så startas en player-process med hjälp av player_sup
+ som ansluts till client.
+ Har även en lista över alla inloggade spelare och har funktioner för att
+ skicka meddelanden till alla vid speciella händelser samt att vidarebefodra
+ privata meddelanden.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+player_sup
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En dynamisk supervisor för alla player-processer.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zone
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+zone tar hand om det som rör en specifik zon.
+ Den har data såsom närliggande zoners ID och listor över spelare och NPCs.
+ Det är zonen som skickar ut meddelanden till andra spelare som säger vad
+ som händer.
+ När en zon startas så startar den alla NPCs i den via npc_sup.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zonemaster
 \end_layout
 
 \begin_deeper
@@ -720,70 +717,73 @@ Modulen har koll på vilka zoner som är aktiva, dvs zoner som körs i en egen
 
 \end_deeper
 \begin_layout Description
-zone_sup.erl
+zone_sup
 \end_layout
 
 \begin_deeper
 \begin_layout Standard
-En supervisor för alla zoner
+En dynamisk supervisor för alla zone-processer
 \end_layout
 
 \end_deeper
 \begin_layout Description
-npc.erl
+npc
 \end_layout
 
 \begin_deeper
 \begin_layout Standard
-npc.erl har hand om information om specifika NPCs.
+npc har hand om information om och simulerar specifika NPCs.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+npc_sup
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En dynamisk supervisor för alla npc-processer.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+parser
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Omvandlar ett kommando från spelaren i text till en form (atomer och tupler)
+ som lättare förstås av player.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+database
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Gränssnitt mot databasen för systemet som lagrar information om zoner, spelare
+ och NPCer.
+ Erbjuder lättanvända metoder för att läsa, skriva och söka i databasen.
+ Sköter även att uppdatera databasen med karta (via maploader) och NPC-typer.
  
 \end_layout
 
 \end_deeper
 \begin_layout Description
-npc_sup.erl
+kidmud
 \end_layout
 
 \begin_deeper
 \begin_layout Standard
-En supervisor för NPCs.
+Sköter uppstart av servern genom att initiera databasen samt starta master_super
+visor.
 \end_layout
 
 \end_deeper
 \begin_layout Description
-parser.erl
-\end_layout
-
-\begin_deeper
-\begin_layout Standard
-Parsern för kommandon från spelaren.
- 
-\end_layout
-
-\end_deeper
-\begin_layout Description
-database.erl
-\end_layout
-
-\begin_deeper
-\begin_layout Standard
-Databasen för systemet.
- Lagrar information om zoner, spelare och NPCer.
-\end_layout
-
-\end_deeper
-\begin_layout Description
-kidmud.erl
-\end_layout
-
-\begin_deeper
-\begin_layout Standard
-Applikation som initierar databasen samt startar master_supervisor.
-\end_layout
-
-\end_deeper
-\begin_layout Description
-maploader.erl
+maploader
 \end_layout
 
 \begin_deeper
@@ -793,12 +793,12 @@ Modul som kan läsa en karta från en fil och ladda in den i databasen.
 
 \end_deeper
 \begin_layout Description
-master_supervisor.erl
+master_supervisor
 \end_layout
 
 \begin_deeper
 \begin_layout Standard
-En supervisor för playermaster, zonemaster, player_sup, zone_sup och npc_sup.
+Rot-supervisor för playermaster, zonemaster, player_sup, zone_sup och npc_sup.
 \end_layout
 
 \end_deeper
@@ -1064,11 +1064,220 @@ target "http://github.com/margnus1/kid-mud"
 \end_inset
 
 .
- Katalogstrukturen hos systemet är följande[under construction]
+ Katalogstrukturen kan ses i Tabell 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "tab:katalogstruktur"
+
+\end_inset
+
+.
+ 
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+doc/src
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller genererad dokumentation
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+doc/pdf
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller rapporter i pdf-format
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+doc/src
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller rapporter i källformat
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ebin/
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller kompilerad kod
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+include/
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller headerfiler med typdeklarationer
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+neotoma/
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller parser-generatorn så att kompilering fungerar på system son inte
+ har denna installerad.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+priv/
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller datafiler som används vid körtid
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+src/
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Innehåller källkoden
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Katalogstruktur
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:katalogstruktur"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-Systemet använder sig av Makefile så kompilering görs med kommandot 
+Systemet använder sig av Make så kompilering görs med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1076,7 +1285,9 @@ make
 \begin_inset Quotes srd
 \end_inset
 
-, EUnit-tester körs med kommandot 
+.
+ Enhetstester finns och använder sig av EUnit, dessa körs med kommandot
+ 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1084,7 +1295,10 @@ make test
 \begin_inset Quotes srd
 \end_inset
 
- samt EDoc-dokumentation genereras med kommandot 
+.
+ Dokumentationsgenerering finns det också stöd av i form av samt EDoc-kommentare
+r.
+ Den gerereras med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1092,16 +1306,24 @@ make doc
 \begin_inset Quotes srd
 \end_inset
 
-
+.
 \end_layout
 
 \begin_layout Standard
-Servern och klienten körs i en Erlang-prompt och därifrån ansluter man till
- en server genom att skriva 
+Klienten körs i en Erlang-prompt och startas med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
-client:connect(node).
+make start_client
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Därifrån ansluter man till en server genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+client:connect(Node).
 \begin_inset Quotes srd
 \end_inset
 
@@ -1109,12 +1331,52 @@ client:connect(node).
 \begin_inset Quotes sld
 \end_inset
 
-node
+Node
 \begin_inset Quotes srd
 \end_inset
 
- är adressen till servern.
- Servern kan lämna vältet tomt för att ansluta till sin egna server.
+ är namnet på den erlang-nod som kör servern, vanligtvis en atom på formen
+ kidserver@Server där 
+\begin_inset Quotes sld
+\end_inset
+
+Server
+\begin_inset Quotes srd
+\end_inset
+
+ är namnet på maskinen som kör servern.
+\end_layout
+
+\begin_layout Standard
+För att kunna köra en server så måste man först konfigurera en databas.
+ Detta behövs bara göras en gång och utförs genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+make setup
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Därefter så startar man servern genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+make start_server
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Man kan från serverprompten ansluta till sin egen server genom att skriva
+ 
+\begin_inset Quotes sld
+\end_inset
+
+client:connect().
+\begin_inset Quotes srd
+\end_inset
+
+.
 \end_layout
 
 \end_body
