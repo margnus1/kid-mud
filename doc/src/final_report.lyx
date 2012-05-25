@@ -495,6 +495,58 @@ Systemarkitektur
 
 \begin_layout Standard
 Kort sammanfattning om vad varje modul gör i programmet.
+ I Figur 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:moduler"
+
+\end_inset
+
+ kan man se hur modulerna kommunicerar och är uppdelade i supervisor-träd.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename system_architecture.svg
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Moduler som kommuniserar och supervisorträd
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:moduler"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Description
