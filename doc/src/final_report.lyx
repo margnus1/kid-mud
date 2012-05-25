@@ -428,12 +428,73 @@ Personligfiera
 \begin_inset space ~
 \end_inset
 
-karaktärer För att unvika att alla spelare ser ungefär likadana ut så skulle
- man kunna lägga till en 
+karaktärer För att unvika att alla spelare ser ungefär 
+\begin_inset Quotes sld
+\end_inset
+
+likadana
+\begin_inset Quotes srd
+\end_inset
+
+ ut så skulle man kunna lägga till en ålder vilket t ex medför att man får
+ högre IQ vilket kanske leder till att man har lättare för att använda magi.
 \end_layout
 
 \begin_layout Section
 Reflektion
+\end_layout
+
+\begin_layout Standard
+Detta projekt har framförallt gett oss en fördjupning i Erlang men även
+ hur det är att arbeta i grupp.
+ Vi valde att sitta tillsammans när vi jobbade eftersom det är väldigt smidigt
+ om man behöver hjälp med något eller kanske behöver diskutera ett förslag
+ på en t ex förändring.
+\end_layout
+
+\begin_layout Standard
+I början så blev det så att vi dela upp arbetet så varje person fick var
+ sin 
+\begin_inset Quotes sld
+\end_inset
+
+modul
+\begin_inset Quotes srd
+\end_inset
+
+ att fokusera på.
+ Vi hade förbestämt vad varje modul skulle innehålla för funktionalitet.
+ Problemet med detta var att vissa moduler krävde mindre arbete än andra,
+ vilket ledde till att ibland så blev det en del väntande på att en viss
+ modul skulle bli klar.
+ En förbättring till detta skulle kunna vara att lägga lite mer tid på att
+ uppskatta hur lång tid olika delar tar att implementera.
+ 
+\end_layout
+
+\begin_layout Standard
+Det som har vart svårt med projektet är att debugga och göra testfall.
+ Detta eftersom att det mesta körs 
+\begin_inset Quotes sld
+\end_inset
+
+samtidigt
+\begin_inset Quotes srd
+\end_inset
+
+ och när man får ett fel så kan det vara svårt att lokalisera precis vart
+ felet uppstår.
+ Detta eftersom att det inte finns någon så kallad 
+\begin_inset Quotes sld
+\end_inset
+
+stack trace
+\begin_inset Quotes srd
+\end_inset
+
+, vilket gör att man bara ser vilken modul som har krashat.
+ Problemet där kan vara att den modul som krashade står inte själv för krashen
+ utan någon annan modul kan vara delaktig i det hela.
 \end_layout
 
 \begin_layout Section
