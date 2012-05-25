@@ -492,6 +492,59 @@ Samtidighet
 Algoritmer och datastrukturer
 \end_layout
 
+\begin_layout Standard
+De datastrukturer som främst använts är erlangs tupler och records.
+ Även listor har används av till exempel 
+\emph on
+playermaster
+\emph default
+ för att hålla reda på inloggade spelare, och 
+\emph on
+zone
+\emph default
+ för att hålla reda på vilka spelare och icke-spelare som är inloggade.
+ I 
+\emph on
+zonemaster
+\emph default
+ så används istället ett bbst (balanserat binärt sökträd) ur erlang-modulen
+ 
+\emph on
+gb_tree
+\emph default
+ för att kunna slå i aktiva zoner efter id.
+\end_layout
+
+\begin_layout Standard
+Records är praktiska eftersom de går att spara i en mnesia-tabell, och för
+ att man kan lägga till fält utan att existerande kod slutar fungera.
+\end_layout
+
+\begin_layout Standard
+När det gäller algoritmer så har vi inte implementerat något mer komplicerat
+ än att traversera elementen i en lista, eller raderna i en fil, och utför
+ en handling på varje, dessa främst i 
+\emph on
+zone
+\emph default
+ och 
+\emph on
+maploder
+\emph default
+.
+ Övriga algoritmer har uteslutande inbyggda funktioner använts till, främst
+ ur modulerna 
+\emph on
+gb_tree
+\emph default
+ och 
+\emph on
+lists
+\emph default
+.
+ 
+\end_layout
+
 \begin_layout Section
 Förslag på förbättringar
 \end_layout
@@ -593,7 +646,14 @@ De versioner av Erlang som använts är R15B01 och R15B.
 status open
 
 \begin_layout Plain Layout
-github-länk
+\begin_inset CommandInset href
+LatexCommand href
+name "github.com"
+target "http://github.com"
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
