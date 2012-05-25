@@ -27,6 +27,7 @@
 \paperfontsize default
 \spacing single
 \use_hyperref true
+\pdf_title "Kid-MUD"
 \pdf_bookmarks true
 \pdf_bookmarksnumbered false
 \pdf_bookmarksopen false
@@ -502,7 +503,57 @@ Mnesia
 \end_layout
 
 \begin_layout Standard
-Dessutom 
+Dessutom så medför OTP och dess bibliotek fördelar i form av bland annat
+ 
+\emph on
+supervisor
+\emph default
+ och 
+\emph on
+gen_server
+\emph default
+.
+ Dessa är 
+\emph on
+beteende-moduler
+\emph default
+ som kan betraktas som basklasser i objektorienterad programmering.
+ En modul kan använda sig av ett beteende genom att exportera förbestämda
+ funktioner, och sedan skicka sitt namn till beteende-modulen, och kallas
+ då för en 
+\emph on
+callback-modul
+\emph default
+.
+ 
+\emph on
+Supervisor
+\emph default
+ abstraherar processhantering genom att starta, starta om och stoppa processer
+ enligt deklarationer sina 
+\emph on
+callback-moduler
+\emph default
+.
+ 
+\emph on
+Gen_server
+\emph default
+ abstraherar en process som skickar och tar emot meddelanden och tillåter
+ programmeraren att fokusera på det som är unikt för sin implementation.
+\end_layout
+
+\begin_layout Standard
+Nackdelarna med Erlang är främst att meddelandepassande kod är svår att
+ enhetstesta och felsöka.
+ Mer om detta i avsnitt 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "sec:Reflektion"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
@@ -510,15 +561,39 @@ Systemarkitektur
 \end_layout
 
 \begin_layout Standard
-Kort sammanfattning om vad varje modul gör i programmet.
- I Figur 
+I Figur 
 \begin_inset CommandInset ref
 LatexCommand vref
 reference "fig:moduler"
 
 \end_inset
 
- kan man se hur modulerna kommunicerar och är uppdelade i supervisor-träd.
+ kan man se hur modulerna kommunicerar (svart) och är uppdelade i supervisor-trä
+d (blått).
+ Supervisor-träd är en del av OTP-designprinciperna och är processer, organisera
+de i ett träd, som ansvarar för att hålla sina barn igång.
+ För att starta ett program så startar man helt enkelt dess rot-supervisor,
+ eller 
+\emph on
+master supervisor
+\emph default
+.
+ Utöver rot-supervisorn så innehåller vårt projekt tre dynamiska supervisors,
+ som inte har några barn vid uppstart, men som lägger till och tar bort
+ dem dynamiskt, 
+\emph on
+npc_sup
+\emph default
+, 
+\emph on
+player_sup
+\emph default
+ och 
+\emph on
+zone_sup
+\emph default
+.
+ Nedan beskrivs alla modulers uppgifter.
 \end_layout
 
 \begin_layout Standard
@@ -601,7 +676,7 @@ player_sup.erl
 
 \begin_deeper
 \begin_layout Standard
-En supervisor för alla player-processer
+En supervisor för alla player-processer.
 \end_layout
 
 \end_deeper
@@ -611,8 +686,9 @@ client.erl
 
 \begin_deeper
 \begin_layout Standard
-Detta är modulen som skickar vidare skrivna kommandon av spelaren samt tar
- emot meddelanden om vad som händer.
+Denna modul startas av en spelare som vill spela och skickar vidare skrivna
+ kommandon av spelaren samt tar emot meddelanden om vad som händer och skriver
+ ut dem på skärmen.
  
 \end_layout
 
@@ -902,6 +978,13 @@ likadana
 
 \begin_layout Section
 Reflektion
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Reflektion"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
