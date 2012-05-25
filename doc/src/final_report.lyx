@@ -1068,12 +1068,8 @@ typer
 \end_layout
 
 \begin_layout Description
-Inloggnings
-\begin_inset space ~
-\end_inset
-
-lösenord Varje spelare får välja ett lösenord som de skall använda för att
- logga in.
+Inloggningslösenord Varje spelare får välja ett lösenord som de skall använda
+ för att logga in.
  Detta för att unvika att oönskade personer får tillträde till karaktärer
  de inte får använda.
 \end_layout
@@ -1100,7 +1096,11 @@ likadana
 \end_inset
 
  ut så skulle man kunna lägga till en ålder vilket t ex medför att man får
- högre IQ vilket kanske leder till att man har lättare för att använda magi.
+ högre 
+\emph on
+Intelligence
+\emph default
+ vilket kanske leder till att man har lättare för att använda magi.
 \end_layout
 
 \begin_layout Section
@@ -1337,8 +1337,7 @@ neotoma/
 \begin_inset Text
 
 \begin_layout Plain Layout
-Innehåller parser-generatorn så att kompilering fungerar på system son inte
- har denna installerad.
+Innehåller parser-generatorn Neotoma.
 \end_layout
 
 \end_inset
