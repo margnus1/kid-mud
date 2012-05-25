@@ -71,6 +71,13 @@
 
 \begin_layout Title
 Kid-MUD
+\begin_inset Newline newline
+\end_inset
+
+
+\size large
+Processorienterad programmering (1DT049) våren 2012.
+ Slutrapport för grupp 14
 \end_layout
 
 \begin_layout Author
@@ -712,6 +719,25 @@ En supervisor för playermaster, zonemaster, player_sup, zone_sup och npc_sup.
 \end_deeper
 \begin_layout Section
 Samtidighet
+\end_layout
+
+\begin_layout Standard
+I Erlang så används message passing.
+ Det är väldigt lättanvänt och vi slipper att fundera på synkronisiering
+ med delat minne och liknande problem.
+ Med hjälp av OTP Design Principles så har vi delat upp koden i calls och
+ casts.
+ Detta leder till att synkronisiering kan hanteras på ett smidigt sätt när
+ processer pratar med varandra.
+ Om en process ska vänta på svar från en annan process innan den ska gå
+ vidare så används calls för att garantera ett svar.
+ Om processen inte vill ha ett svar så används casts.
+ Eftersom vi har valt erlang så är message passing det givna valet och vi
+ känner att det tillräckligt för våra behov.
+ Hade vi valt ett annat programmeringsspråk hade vi kunnat utforska andra
+ val.
+ I våran nuvarande struktur så finns det inte risk för deadlocks tack vare
+ OTP.
 \end_layout
 
 \begin_layout Section
