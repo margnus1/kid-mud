@@ -297,6 +297,8 @@ fetch() ->
     receive
         Anything ->
             Anything
+    after 100 ->
+	    no_message
     end.
 
 %% @hidden
@@ -312,31 +314,31 @@ npn_test_()->
      [
 
       fun ()->
-	      handle_cast({consider,self(),120},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      handle_cast({consider,self(),120},{a,a, {a,a,a,a,100,10,a,a,a},a,a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"Seems to be an easy fight!"}}),
 	      flush()
       end,
 
       fun ()->
-	      handle_cast({consider,self(),1000},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      handle_cast({consider,self(),1000},{a,a, {a,a,a,a,100,10,a,a,a},a,a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"This seems to be a very easy fight!"}}),
 	      flush()
       end,
 
       fun ()->
-	      handle_cast({consider,self(),76},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      handle_cast({consider,self(),76},{a,a, {a,a,a,a,100,10,a,a,a},a,a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"It seems this will be a hard fight.."}}),
 	      flush()
       end,
 
       fun ()->
-	      handle_cast({consider,self(),1},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      handle_cast({consider,self(),1},{a,a, {a,a,a,a,100,10,a,a,a},a,a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"This is going to be very hard..."}}),
 	      flush()
       end,
 
       fun ()->
-	      handle_cast({consider,self(),100},{a,a, {a,a,a,a,100,10,a,a,a},a}),
+	      handle_cast({consider,self(),100},{a,a, {a,a,a,a,100,10,a,a,a},a,a}),
 	      ?assertEqual(fetch(),{'$gen_cast',{message,"Seems like an even fight."}}),
 	      flush()
       end,

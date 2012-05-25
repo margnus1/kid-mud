@@ -26,7 +26,16 @@
 \index_command default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize default
 \use_geometry false
 \use_amsmath 1
@@ -62,6 +71,13 @@
 
 \begin_layout Title
 Kid-MUD
+\begin_inset Newline newline
+\end_inset
+
+
+\size large
+Processorienterad programmering (1DT049) våren 2012.
+ Slutrapport för grupp 14
 \end_layout
 
 \begin_layout Author
@@ -178,7 +194,7 @@ zoner
 \end_layout
 
 \begin_layout Subsection
-Syfte
+Mål och Syfte
 \end_layout
 
 \begin_layout Standard
@@ -187,18 +203,24 @@ Syftet med projektet är att konstruera ett
 MUD
 \emph default
  med fokus på samtidighet för att kunna skala på multiprocessorsystem.
-\end_layout
-
-\begin_layout Subsection
-Målsättning
-\end_layout
-
-\begin_layout Subsection
-Problemformulering
+ Målet är att bygga ett fullt fungerande 
+\emph on
+MUD
+\emph default
+ med så många funktioner som vi hinner med.
 \end_layout
 
 \begin_layout Subsection
 Avgränsningar
+\end_layout
+
+\begin_layout Standard
+Vi valde att inte implementera ett Telnet-interface trots att detta är en
+ kännetecknande komponent hos ett 
+\emph on
+MUD
+\emph default
+ eftersom vi ville lägga fokus på samtidigheten och grundläggande funktionalitet.
 \end_layout
 
 \begin_layout Section
@@ -224,7 +246,11 @@ reference "fig:loggar-in"
 \begin_inset Quotes sld
 \end_inset
 
+
+\family typewriter
 look
+\family default
+
 \begin_inset Quotes srd
 \end_inset
 
@@ -233,7 +259,11 @@ look
 \begin_inset Quotes sld
 \end_inset
 
+
+\family typewriter
 exits
+\family default
+
 \begin_inset Quotes srd
 \end_inset
 
@@ -261,16 +291,22 @@ height_special "totalheight"
 status open
 
 \begin_layout Plain Layout
+
+\family typewriter
 Name?> 
 \color red
 Gustav
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 Welcome to Kid-MUD!
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 You are on the bridge that connects the town to the outside world.
  Beneath the bridge runs a mighty river and to the south you see a large
  waterfall pouring down huge amounts of water from the tall mountain.
@@ -281,14 +317,20 @@ You are on the bridge that connects the town to the outside world.
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 Here stands a Frog 
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 There are exits to east, west
 \end_layout
 
 \begin_layout Plain Layout
+
+\family typewriter
 ?> 
 \end_layout
 
@@ -327,23 +369,432 @@ name "fig:loggar-in"
 
 \begin_layout Standard
 När man väl är i en zon så finns det en del saker att göra.
- Man kan till exempel skriva
+ Man kan till exempel skriva 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+say 
+\emph on
+Meddelande
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+ för att säga saker till andra spelare i samma zon.
+ Man kan även prata privat med en godtyckig spelare genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+tell 
+\emph on
+Vem
+\emph default
+ 
+\emph on
+Meddelande
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Man kan också attackera spelare och icke-spelare genom att skriva 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+attack 
+\emph on
+Vem
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+, och för att sluta slåss skriver man 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+stop
+\family default
+
+\begin_inset Quotes srd
+\end_inset
+
+, eller väntar på att offret dör.
+ Om man vill uppskatta sina chanser mot en icke-spelare kan man använda
+ kommandot 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+consider 
+\emph on
+Vem
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
+ När man inser att man aldrig kan vinna striden man är i så är det lämpligt
+ att fly.
+ För att gå till en annan zon så skriver man 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+go 
+\emph on
+Väderstreck
+\family default
+\emph default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
+ Man kan bara gå i de riktningar som antyddes av 
+\begin_inset Quotes sld
+\end_inset
+
+
+\family typewriter
+exits
+\family default
+
+\begin_inset Quotes srd
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
 Programmeringsspråk
 \end_layout
 
+\begin_layout Standard
+Vi valde att skriva systemet i Erlang för att det är ett språk vi trodde
+ skulle vara lämpad till att lösa uppgiften så att vi kunde utnyttja oss
+ utav samtidighet som uppgiften krävde.
+ Fördelarna är att det är väldigt lätt att skriva kod som utnyttjar samtidighet
+ och att meddelandepassningen samt de lätta processerna i Erlang fungerar
+ väldigt bra till sättet vi valde att lösa problemet på.
+\end_layout
+
 \begin_layout Section
 Systemarkitektur
 \end_layout
 
+\begin_layout Standard
+Kort sammanfattning om vad varje modul gör i programmet.
+ I Figur 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:moduler"
+
+\end_inset
+
+ kan man se hur modulerna kommunicerar och är uppdelade i supervisor-träd.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename system_architecture.svg
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Moduler som kommuniserar och supervisorträd
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:moduler"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+player.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+player.erl är den modul som ligger emellan klienten och själva systemet.
+ Alla kommandon som klienten skriver skickas till player som sedan tolkar
+ kommandot med en parser och utför kommandot genom att skicka vidare meddelanden
+ till andra moduler.
+ player.erl håller även reda på spelarens status, såsom om man är i en strid
+ och spelarens liv.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+playermaster.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Tar hand om första anslutningen till servern från klienten.
+ Använder sig av player_sup.erl att starta nya player-processer.
+ Har även en lista över alla inloggade spelare och har funktioner för att
+ skicka meddelanden till alla vid speciella händelser samt att spelare att
+ kunna prata med en enskild person.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+player_sup.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för alla player-processer
+\end_layout
+
+\end_deeper
+\begin_layout Description
+client.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Detta är modulen som skickar vidare skrivna kommandon av spelaren samt tar
+ emot meddelanden om vad som händer.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zone.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+zone.erl tar hand om det som rör en specifik zon.
+ Den har data såsom närliggande zoners ID och listor över spelare och NPCs.
+ Det är zonen som skickar ut meddelanden till andra spelare som säger vad
+ som händer.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zonemaster.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Modulen har koll på vilka zoner som är aktiva, dvs zoner som körs i en egen
+ process.
+ Om en spelare vill gå till en inaktiv zon så startar zonemaster den zonen
+ via zone_sup.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zone_sup.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för alla zoner
+\end_layout
+
+\end_deeper
+\begin_layout Description
+npc.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+npc.erl har hand om information om specifika NPCs.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+npc_sup.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för NPCs.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+parser.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Parsern för kommandon från spelaren.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+database.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Databasen för systemet.
+ Lagrar information om zoner, spelare och NPCer.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+kidmud.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Applikation som initierar databasen samt startar master_supervisor.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+maploader.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Modul som kan läsa en karta från en fil och ladda in den i databasen.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+master_supervisor.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för playermaster, zonemaster, player_sup, zone_sup och npc_sup.
+\end_layout
+
+\end_deeper
 \begin_layout Section
 Samtidighet
 \end_layout
 
+\begin_layout Standard
+I Erlang så används message passing.
+ Det är väldigt lättanvänt och vi slipper att fundera på synkronisiering
+ med delat minne och liknande problem.
+ Med hjälp av OTP Design Principles så har vi delat upp koden i calls och
+ casts.
+ Detta leder till att synkronisiering kan hanteras på ett smidigt sätt när
+ processer pratar med varandra.
+ Om en process ska vänta på svar från en annan process innan den ska gå
+ vidare så används calls för att garantera ett svar.
+ Om processen inte vill ha ett svar så används casts.
+ Eftersom vi har valt erlang så är message passing det givna valet och vi
+ känner att det tillräckligt för våra behov.
+ Hade vi valt ett annat programmeringsspråk hade vi kunnat utforska andra
+ val.
+ I våran nuvarande struktur så finns det inte risk för deadlocks tack vare
+ OTP.
+\end_layout
+
 \begin_layout Section
 Algoritmer och datastrukturer
+\end_layout
+
+\begin_layout Standard
+De datastrukturer som främst använts är erlangs tupler och records.
+ Även listor har används av till exempel 
+\emph on
+playermaster
+\emph default
+ för att hålla reda på inloggade spelare, och 
+\emph on
+zone
+\emph default
+ för att hålla reda på vilka spelare och icke-spelare som är inloggade.
+ I 
+\emph on
+zonemaster
+\emph default
+ så används istället ett bbst (balanserat binärt sökträd) ur erlang-modulen
+ 
+\emph on
+gb_tree
+\emph default
+ för att kunna slå i aktiva zoner efter id.
+\end_layout
+
+\begin_layout Standard
+Records är praktiska eftersom de går att spara i en mnesia-tabell, och för
+ att man kan lägga till fält utan att existerande kod slutar fungera.
+\end_layout
+
+\begin_layout Standard
+När det gäller algoritmer så har vi inte implementerat något mer komplicerat
+ än att traversera elementen i en lista, eller raderna i en fil, och utför
+ en handling på varje, dessa främst i 
+\emph on
+zone
+\emph default
+ och 
+\emph on
+maploder
+\emph default
+.
+ Övriga algoritmer har uteslutande inbyggda funktioner använts till, främst
+ ur modulerna 
+\emph on
+gb_tree
+\emph default
+ och 
+\emph on
+lists
+\emph default
+.
+ 
 \end_layout
 
 \begin_layout Section
@@ -508,7 +959,14 @@ De versioner av Erlang som använts är R15B01 och R15B.
 status open
 
 \begin_layout Plain Layout
-github
+\begin_inset CommandInset href
+LatexCommand href
+name "github.com"
+target "http://github.com"
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -518,7 +976,7 @@ github
 \end_layout
 
 \begin_layout Standard
-Systemet kompileras via Makefile med kommandot 
+Systemet använder sig av Makefile så kompilering görs med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -526,8 +984,7 @@ make
 \begin_inset Quotes srd
 \end_inset
 
-.
- EUnit-tester körs med kommandot 
+, EUnit-tester körs med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -543,26 +1000,12 @@ make doc
 \begin_inset Quotes srd
 \end_inset
 
-.
- För att starta en server används kommandot 
-\begin_inset Quotes sld
-\end_inset
 
-make start_server
-\begin_inset Quotes srd
-\end_inset
+\end_layout
 
- och för en klient används kommandot 
-\begin_inset Quotes sld
-\end_inset
-
-make start_client
-\begin_inset Quotes srd
-\end_inset
-
-.
- Servern och klienten körs i en Erlang-prompt och därifrån ansluter man
- till en server genom att skriva 
+\begin_layout Standard
+Servern och klienten körs i en Erlang-prompt och därifrån ansluter man till
+ en server genom att skriva 
 \begin_inset Quotes sld
 \end_inset
 
