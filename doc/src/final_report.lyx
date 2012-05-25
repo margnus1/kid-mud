@@ -398,10 +398,184 @@ Meddelande
 Programmeringsspråk
 \end_layout
 
+\begin_layout Standard
+Vi valde att skriva systemet i Erlang för att det är ett språk vi trodde
+ skulle vara lämpad till att lösa uppgiften så att vi kunde utnyttja oss
+ utav samtidighet som uppgiften krävde.
+ Fördelarna är att det är väldigt lätt att skriva kod som utnyttjar samtidighet
+ och att meddelandepassningen samt de lätta processerna i Erlang fungerar
+ väldigt bra till sättet vi valde att lösa problemet på.
+\end_layout
+
 \begin_layout Section
 Systemarkitektur
 \end_layout
 
+\begin_layout Standard
+Kort sammanfattning om vad varje modul gör i programmet.
+\end_layout
+
+\begin_layout Description
+player.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+player.erl är den modul som ligger emellan klienten och själva systemet.
+ Alla kommandon som klienten skriver skickas till player som sedan tolkar
+ kommandot med en parser och utför kommandot genom att skicka vidare meddelanden
+ till andra moduler.
+ player.erl håller även reda på spelarens status, såsom om man är i en strid
+ och spelarens liv.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+playermaster.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Tar hand om första anslutningen till servern från klienten.
+ Använder sig av player_sup.erl att starta nya player-processer.
+ Har även en lista över alla inloggade spelare och har funktioner för att
+ skicka meddelanden till alla vid speciella händelser samt att spelare att
+ kunna prata med en enskild person.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+player_sup.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för alla player-processer
+\end_layout
+
+\end_deeper
+\begin_layout Description
+client.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Detta är modulen som skickar vidare skrivna kommandon av spelaren samt tar
+ emot meddelanden om vad som händer.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zone.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+zone.erl tar hand om det som rör en specifik zon.
+ Den har data såsom närliggande zoners ID och listor över spelare och NPCs.
+ Det är zonen som skickar ut meddelanden till andra spelare som säger vad
+ som händer.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zonemaster.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Modulen har koll på vilka zoner som är aktiva, dvs zoner som körs i en egen
+ process.
+ Om en spelare vill gå till en inaktiv zon så startar zonemaster den zonen
+ via zone_sup.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+zone_sup.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för alla zoner
+\end_layout
+
+\end_deeper
+\begin_layout Description
+npc.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+npc.erl har hand om information om specifika NPCs.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+npc_sup.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för NPCs.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+parser.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Parsern för kommandon från spelaren.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Description
+database.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Databasen för systemet.
+ Lagrar information om zoner, spelare och NPCer.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+kidmud.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Applikation som initierar databasen samt startar master_supervisor.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+maploader.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+Modul som kan läsa en karta från en fil och ladda in den i databasen.
+\end_layout
+
+\end_deeper
+\begin_layout Description
+master_supervisor.erl
+\end_layout
+
+\begin_deeper
+\begin_layout Standard
+En supervisor för playermaster, zonemaster, player_sup, zone_sup och npc_sup.
+\end_layout
+
+\end_deeper
 \begin_layout Section
 Samtidighet
 \end_layout
