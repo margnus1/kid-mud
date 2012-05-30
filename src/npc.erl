@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
+%% Copyright (c) 2012 Magnus Lï¿½ng, Mikael Wiberg, Michael Bergroth and Eric Arnerlï¿½v
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -177,7 +177,7 @@ handle_cast({damage, Damage, Attacker}, State =
     end;
 
 handle_cast({attack, NewTarget}, State =  
-		{_Ref, Zone, Data, _CurrentHealth, _CombatState}) ->
+		{_Ref, Zone, Data, _CurrentHealth, {combat, _, _}}) ->
     ToHit = random:uniform(100),
     if ToHit > 20 ->
 	    Damage = Data#npc.damage + random:uniform(1 + Data#npc.damage div 2) - 1;
