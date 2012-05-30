@@ -368,7 +368,7 @@ npn_test_()->
       fun() ->
 	      Npc = #npc{damage = 10},
 	      CurrentHealth = whatever,
-	      CombatState = whatever,
+	      CombatState = {combat, what, ever},
 	      State = {ref, self(), Npc, CurrentHealth, CombatState},
 	      Value = handle_cast({attack, "foo"}, State),
 	      ?assertEqual({noreply, State}, Value),
