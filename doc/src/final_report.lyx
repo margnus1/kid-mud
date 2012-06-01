@@ -222,6 +222,8 @@ Vi valde att inte implementera ett Telnet-interface trots att detta är en
 MUD
 \emph default
  eftersom vi ville lägga fokus på samtidigheten och grundläggande funktionalitet.
+ Telnet är ett gammalt protokoll för att ansluta till en terminal över en
+ nätverksanslutning.
 \end_layout
 
 \begin_layout Section
