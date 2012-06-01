@@ -834,11 +834,11 @@ Samtidighet
 \end_layout
 
 \begin_layout Standard
-I Erlang så används meddelandepassning för att kommunicera mellan processer.
+I Erlang används meddelandepassning för att kommunicera mellan processer.
  Det är väldigt lättanvänt och vi slipper att fundera på synkronisiering
  med delat minne och liknande problem.
- Med hjälp av OTP Design Principles så har vi delat upp meddelandepassningen
- mellan processer i två olika typer.
+ Utifrån designprinciperna ur OTP:n delas meddelandepassningen mellan processer
+ upp i två olika typer.
  
 \end_layout
 
@@ -863,7 +863,7 @@ Den andra typen är casts, de ska användas när en process inte vill ha ett
 I våran nuvarande struktur har vi designat koden och modulerna på ett sätt
  som ska förhindra att deadlocks ska uppstå.
  Vi använder oss av enkelriktad kommunikation när processer kommunicerar
- med calls, detta gör så att vi inte kan få några cirkulära vänteproblem.
+ med calls, detta gör att vi inte kan få några cirkulära vänteproblem.
  
 \end_layout
 
@@ -886,7 +886,7 @@ zone
 \emph on
 zonemaster
 \emph default
- så används istället ett bbst (balanserat binärt sökträd) ur erlang-modulen
+ används istället ett BBST (balanserat binärt sökträd) ur erlang-modulen
  
 \emph on
 gb_tree
@@ -935,7 +935,7 @@ State men med fältet players satt till UpdatedPlayers
 \end_layout
 
 \begin_layout Standard
-När det gäller algoritmer så har vi inte implementerat något mer komplicerat
+När det gäller algoritmer har vi inte implementerat något mer komplicerat
  än att traversera elementen i en lista, eller raderna i en fil, och utför
  en handling på varje, dessa främst i 
 \emph on
@@ -964,7 +964,7 @@ När det gäller
 \emph on
 parser
 \emph default
- så är den en wrapper runt en automatiskt genererad parsermodul 
+ är den en wrapper runt en automatiskt genererad parsermodul 
 \emph on
 parser_grammar
 \emph default
@@ -997,7 +997,7 @@ parser_grammar.peg
  Detta innebär att algoritmen för att tolka spelarkommandon skrivs automatiskt.
  Grammatiken beskriver de kommandon som man kan skriva och hur de skall
  representeras i erlang-data.
- Exempelvis så är kommandot 
+ Exempelvis är kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1005,7 +1005,7 @@ kill
 \begin_inset Quotes srd
 \end_inset
 
- definierat såhär:
+ definierat som följande:
 \end_layout
 
 \begin_layout Standard
@@ -1054,7 +1054,7 @@ kill
  följt av vad som helst.
  De följande två raderna är Erlang, och säger hur det skall representeras
  i erlang-data.
- Här så binder vi andra delen av kommandot (vad som helst-biten) till Letters,
+ Här binder vi andra delen av kommandot (vad som helst-biten) till Letters,
  och omvandlar det sedan till en sträng, och ger slutligen ett svar på formen
  
 \family typewriter
