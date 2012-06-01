@@ -654,7 +654,7 @@ name "fig:moduler"
 \end_layout
 
 \begin_layout Description
-client.erl
+client
 \end_layout
 
 \begin_deeper
