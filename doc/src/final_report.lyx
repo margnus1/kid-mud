@@ -222,6 +222,8 @@ Vi valde att inte implementera ett Telnet-interface trots att detta är en
 MUD
 \emph default
  eftersom vi ville lägga fokus på samtidigheten och grundläggande funktionalitet.
+ Telnet är ett gammalt protokoll för att ansluta till en terminal över en
+ nätverksanslutning.
 \end_layout
 
 \begin_layout Section
@@ -495,16 +497,18 @@ Vi valde att skriva systemet i Erlang för att det är ett språk vi trodde
  Fördelarna är att det är väldigt lätt att skriva kod som utnyttjar samtidighet
  och att meddelandepassningen samt de lätta processerna i Erlang fungerar
  väldigt bra till sättet vi valde att lösa problemet på.
- Vidare så var 
-\emph on
-Mnesia
-\emph default
-, som är en i Erlang inbyggd databas, mycket behändig för våra datalagringsbehov.
+ 
 \end_layout
 
 \begin_layout Standard
-Dessutom så medför OTP och dess bibliotek fördelar i form av bland annat
- 
+Vi har även använt oss av Erlangs Open Telecom Platform (OTP).
+ Det är en samling av bibliotek och designprinciper för Erlang som i vårat
+ fall har underlättat arbetet.
+ De delar av OTP:n vi har använt är 
+\emph on
+Mnesia
+\emph default
+, 
 \emph on
 supervisor
 \emph default
@@ -513,7 +517,20 @@ supervisor
 gen_server
 \emph default
 .
- Dessa är 
+ 
+\emph on
+Mnesia
+\emph default
+ är en databas som har varit mycket behändig för våra datalagringsbehov.
+ 
+\emph on
+Supervisor
+\emph default
+ och 
+\emph on
+gen_server
+\emph default
+ är 
 \emph on
 beteende-moduler
 \emph default
