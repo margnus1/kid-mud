@@ -1018,7 +1018,7 @@ Command
 \begin_inset space ~
 \end_inset
 
-Autocompletion Istället för att behöva skriva all text fullständigt så kan
+Autocompletion Istället för att behöva skriva all text fullständigt kan
  det vara behändigt att lägga till ett system som fyller i resten av ett
  t ex.
  kommando som är halvt skrivet.
@@ -1075,8 +1075,8 @@ Inloggningslösenord Varje spelare får välja ett lösenord som de skall använ
 \end_layout
 
 \begin_layout Description
-Färdighetssystem För att göra allt mer intresant så skulle ett system där
- spelaren kan utvecklas och lära sig nya färdigheter.
+Färdighetssystem För att göra allt mer intresant skulle ett system där spelaren
+ kan utvecklas och lära sig nya färdigheter.
  Exempel på färdigheter skulle kunna vara att slå snabbare med ett svärd
  eller lära sig att använda en yxa på ett effektivt sätt.
  Detta kommer göra att strider blir mer intresanta och mindre enformiga.
@@ -1117,14 +1117,44 @@ name "sec:Reflektion"
 \begin_layout Standard
 Detta projekt har framförallt gett oss en fördjupning i Erlang men även
  hur det är att arbeta i grupp.
- Vi valde att sitta tillsammans när vi jobbade eftersom det är väldigt smidigt
- om man behöver hjälp med något eller kanske behöver diskutera ett förslag
- på en t ex förändring.
+ Vi valde projekt genom att först utföra en 
+\begin_inset Quotes sld
+\end_inset
+
+brainstorm
+\begin_inset Quotes srd
+\end_inset
+
+ och sedan bestämde vi oss för de tre idéerna som vi tyckte var mest intresanta.
+ En stor fördel med att göra ett 
+\begin_inset Quotes sld
+\end_inset
+
+MUD
+\begin_inset Quotes srd
+\end_inset
+
+ är att det är väldigt lätt att 
+\begin_inset Quotes sld
+\end_inset
+
+skala
+\begin_inset Quotes srd
+\end_inset
+
+, alltså lätt att relativt snabbt få en fungerande grund men även lätt att
+ bygga vidare på.
 \end_layout
 
 \begin_layout Standard
-I början så blev det så att vi dela upp arbetet så varje person fick var
- sin 
+Vi valde att sitta tillsammans när vi jobbade eftersom det är väldigt smidigt
+ om man behöver hjälp med något eller kanske behöver diskutera ett förslag
+ på t.ex.
+ en förändring.
+\end_layout
+
+\begin_layout Standard
+I början delade vi upp arbetet så att varje person fick var sin 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1132,14 +1162,33 @@ modul
 \begin_inset Quotes srd
 \end_inset
 
- att fokusera på.
+ att fokusera sig på.
  Vi hade förbestämt vad varje modul skulle innehålla för funktionalitet.
  Problemet med detta var att vissa moduler krävde mindre arbete än andra,
  vilket ledde till att ibland så blev det en del väntande på att en viss
  modul skulle bli klar.
- En förbättring till detta skulle kunna vara att lägga lite mer tid på att
+ En förbättring på detta skulle kunna vara att lägga lite mer tid på att
  uppskatta hur lång tid olika delar tar att implementera.
- 
+ När grundmodulerna var klara satte vi oss ner och brainstormade om vilka
+ nya funktionaliteter vi vill implementera.
+ Vi valde sedan ut de funktioner som vi tyckte var viktigaste för 
+\begin_inset Quotes sld
+\end_inset
+
+milestone 1
+\begin_inset Quotes srd
+\end_inset
+
+.
+ När den var färdig gjorde vi samma sak inför 
+\begin_inset Quotes sld
+\end_inset
+
+milestone 2
+\begin_inset Quotes srd
+\end_inset
+
+ osv.
 \end_layout
 
 \begin_layout Standard
