@@ -535,7 +535,11 @@ gen_server
 beteende-moduler
 \emph default
  som kan betraktas som basklasser i objektorienterad programmering.
- En modul kan använda sig av ett beteende genom att exportera förbestämda
+ 
+\end_layout
+
+\begin_layout Standard
+En modul kan använda sig av ett beteende genom att exportera förbestämda
  funktioner, och sedan skicka sitt namn till beteende-modulen, och kallas
  då för en 
 \emph on
@@ -547,7 +551,7 @@ callback-modul
 Supervisor
 \emph default
  abstraherar processhantering genom att starta, starta om och stoppa processer
- enligt deklarationer sina 
+ enligt deklarationerna för sina 
 \emph on
 callback-moduler
 \emph default
@@ -827,11 +831,34 @@ Samtidighet
 I Erlang så används message passing för att kommunicera mellan processer.
  Det är väldigt lättanvänt och vi slipper att fundera på synkronisiering
  med delat minne och liknande problem.
- Med hjälp av OTP Design Principles så har vi delat upp message passing mellan processer i två olika typer. Den första typen är calls, de ska användas när en process vill ha ett svar på sitt meddelande. Detta garanterar att processen som vi kommunicerar med ska skicka tillbaka ett svar direkt efter den har hanterat meddelandet. Den andra typen är casts, de ska användas när en process inte vill ha ett svar från processen som den skickar sitt meddelande till. Detta leder till att synkronisiering kan hanteras på ett smidigt sätt när processer pratar med varandra. Vilket i sin tur leder till snabbare och mer robust kommunikation.
+ Med hjälp av OTP Design Principles så har vi delat upp message passing
+ mellan processer i två olika typer.
  
- I våran nuvarande struktur har vi designat koden och modulerna på ett sätt som ska förhindra att deadlocks ska uppstå. Vi använder oss av enkelriktad kommunikation när processer kommunicerar med calls, detta gör så att vi inte kan få några cirkulära vänteproblem. 
+\end_layout
 
+\begin_layout Standard
+Den första typen är calls, de ska användas när en process vill ha ett svar
+ på sitt meddelande.
+ Detta garanterar att processen som vi kommunicerar med ska skicka tillbaka
+ ett svar direkt efter den har hanterat meddelandet.
+ 
+\end_layout
 
+\begin_layout Standard
+Den andra typen är casts, de ska användas när en process inte vill ha ett
+ svar från processen som den skickar sitt meddelande till.
+ Detta leder till att synkronisiering kan hanteras på ett smidigt sätt när
+ processer pratar med varandra.
+ Vilket i sin tur leder till snabbare och mer robust kommunikation.
+ 
+\end_layout
+
+\begin_layout Standard
+I våran nuvarande struktur har vi designat koden och modulerna på ett sätt
+ som ska förhindra att deadlocks ska uppstå.
+ Vi använder oss av enkelriktad kommunikation när processer kommunicerar
+ med calls, detta gör så att vi inte kan få några cirkulära vänteproblem.
+ 
 \end_layout
 
 \begin_layout Section
@@ -1043,7 +1070,7 @@ slut
 \end_layout
 
 \begin_layout Description
-Nerstänging
+Nedstänging
 \begin_inset space ~
 \end_inset
 
@@ -1092,7 +1119,7 @@ Färdighetssystem För att göra allt mer intresant så skulle ett system där
 \end_layout
 
 \begin_layout Description
-Personligfiera
+Personifiera
 \begin_inset space ~
 \end_inset
 
