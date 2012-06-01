@@ -235,13 +235,12 @@ Kid-MUD
 \end_layout
 
 \begin_layout Standard
-När man loggar in i systemet så anger man namn på den karaktär man vill
- spela.
- Om karaktären inte finns så skapas den.
- Efter dess så anländer man i en zon.
- När man anländer till en zon så får man en beskrivning av hur zonen ser
- ut, vilka andra spelare och icke-spelare, NPC:er, som står där samt vart
- man kan gå (se Figur 
+När man loggar in i systemet anger man namnet på den karaktär man vill spela.
+ Om karaktären inte finns skapas den.
+ Därefter anländer man till en zon.
+ När man anländer till en zon får man en beskrivning av hur zonen ser ut,
+ vilka andra spelare och icke-spelare, NPC:er, som står där samt vart man
+ kan gå (se Figur 
 \begin_inset CommandInset ref
 LatexCommand vref
 reference "fig:loggar-in"
@@ -375,7 +374,7 @@ name "fig:loggar-in"
 \end_layout
 
 \begin_layout Standard
-När man väl är i en zon så finns det en del saker att göra.
+När man väl är i en zon finns det en del saker man kan göra.
  Man kan till exempel skriva 
 \begin_inset Quotes sld
 \end_inset
@@ -601,13 +600,12 @@ reference "fig:moduler"
 d (blått).
  Supervisor-träd är en del av OTP-designprinciperna och är processer, organisera
 de i ett träd, som ansvarar för att hålla sina barn igång.
- För att starta ett program så startar man helt enkelt dess rot-supervisor,
- eller 
+ För att starta ett program startar man dess rot-supervisor, eller 
 \emph on
 master supervisor
 \emph default
 .
- Utöver rot-supervisorn så innehåller vårt projekt tre dynamiska supervisors,
+ Utöver rot-supervisorn innehåller vårt projekt tre dynamiska supervisors,
  som inte har några barn vid uppstart, men som lägger till och tar bort
  dem dynamiskt, 
 \emph on
@@ -699,9 +697,9 @@ playermaster
 
 \begin_deeper
 \begin_layout Standard
-När en spelare loggar in så ber client playermaster om att få logga in.
- Om det accepteras så startas en player-process med hjälp av player_sup
- som ansluts till client.
+När en spelare loggar in ber client playermaster om att få logga in.
+ Om det accepteras startas en player-process med hjälp av player_sup som
+ ansluts till client.
  Har även en lista över alla inloggade spelare och har funktioner för att
  skicka meddelanden till alla vid speciella händelser samt att vidarebefodra
  privata meddelanden.
@@ -725,10 +723,10 @@ zone
 \begin_deeper
 \begin_layout Standard
 zone tar hand om det som rör en specifik zon.
- Den har data såsom närliggande zoners ID och listor över spelare och NPCs.
+ Den har data såsom närliggande zoners ID och listor över spelare och NPC:s.
  Det är zonen som skickar ut meddelanden till andra spelare som säger vad
  som händer.
- När en zon startas så startar den alla NPCs i den via npc_sup.
+ När en zon startas upp startar den alla NPC:s i zonen via npc_sup.
 \end_layout
 
 \end_deeper
@@ -740,7 +738,7 @@ zonemaster
 \begin_layout Standard
 Modulen har koll på vilka zoner som är aktiva, dvs zoner som körs i en egen
  process.
- Om en spelare vill gå till en inaktiv zon så startar zonemaster den zonen
+ Om en spelare vill gå till en inaktiv zon startar zonemaster den zonen
  via zone_sup.
 \end_layout
 
