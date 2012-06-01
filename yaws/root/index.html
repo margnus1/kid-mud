@@ -49,7 +49,7 @@
                   var msg=$('msgs');
                   var spanText = document.createElement('span');
                   spanText.className='text';
-                  spanText.innerHTML=text.replace('\n', '<br>');
+                  spanText.innerHTML=text.replace(/\n/g, '<br>');
                   var lineBreak = document.createElement('br');
                   msg.appendChild(spanText);
                   msg.appendChild(lineBreak);
@@ -72,8 +72,11 @@
     };
   </script>
   <style type='text/css'>
-    div.hidden, span.hidden { display: none; }
-    div#msgs { overflow-y: scroll; height: 200pt; }
+    .hidden { display: none; }
+    div#msgs { overflow-y: scroll; 
+               height: 200pt;
+               background-color: black;
+               color: #ddd; }
   </style>
 
 </head>
@@ -85,10 +88,10 @@
   </div>
   <span id="status"></span>
   <br/>
-  <div id="command" class="hidden">
+  <form id="command" class="hidden">
     <span id="nameprompt">Name:&nbsp;</span><input id='phrase' type='text'/>
     <input id='sendB' class='button' type='submit' name='connect' value='Send'/>
-  </div>
+  </form>
 
   <script type='text/javascript'>
     $('cA').onclick = function(event) { client.connect(); return false; };

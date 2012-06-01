@@ -1,10 +1,16 @@
--module(ws_test).
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
+%% See the file license.txt for copying permission.
+
+-module(ws_client).
 
 -export([handle_message/2]).
 
 -include("yaws_api.hrl").
 
 -export([relay/1]).
+
+%% Anm: handle_message är tagen med modifikation från yaws_websockets.erl
+%%      Den Kid-MUD specifika delen liger nedanför
 
 %% start of a fragmented message
 handle_message(#ws_frame_info{fin=0,
@@ -135,17 +141,22 @@ handle_message(#ws_frame_info{}, Acc) ->
 input({text, Name}, initial, Socket) ->
     Relay = spawn(?MODULE, relay, [Socket]),
     AsciiName = unicode:characters_to_list(Name),
-    case playermaster:start_player(AsciiName, Relay) of
-        {ok, Server} ->
-            link(Relay),
-            {reply, {text, <<"OK">>}, {Relay, Server}};
-        login_failed ->
-            exit(Relay, normal),
-            {reply, {text, <<"ERR You cannot connect with that name">>}, initial};
-        {login_failed, Reason} ->
-            exit(Relay, normal),
-            {reply, {text, unicode:characters_to_binary(
-                             ["ERR ", Reason])}, initial}
+    case check_name(AsciiName) of
+	ok ->
+	    case playermaster:start_player(AsciiName, Relay) of
+		{ok, Server} ->
+		    link(Relay),
+		    {reply, {text, <<"OK">>}, {Relay, Server}};
+		login_failed ->
+		    exit(Relay, normal),
+		    {reply, {text, <<"ERR You cannot connect with that name">>}, initial};
+		{login_failed, Reason} ->
+		    exit(Relay, normal),
+		    {reply, {text, unicode:characters_to_binary(
+				     ["ERR ", Reason])}, initial}
+	    end;
+	{failed, Reason} ->
+	    {reply, {text, [<<"ERR ">>, Reason]}, initial}
     end;
 
 input({text, <<"logout">>}, {Relay, Client}, _Socket) ->
@@ -177,3 +188,16 @@ relay(Socket) ->
                                ["STATUS ", Status])})
     end,
     relay(Socket).
+
+check_name(Name) ->
+    case re:run(Name, "^.{3,15}$") of
+	{match, _} ->
+	    case re:run(Name, "^.[^\s]*$") of
+		{match, _} ->
+		    ok;
+		nomatch ->
+		    {failed, <<"Name cannot contain spaces">>}
+	    end;
+	nomatch ->
+	    {failed, <<"Name must be 3-15 characters long">>}
+    end.

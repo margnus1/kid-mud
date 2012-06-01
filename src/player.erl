@@ -300,6 +300,8 @@ handle_cast({damage, Damage, Attacker},
 	    {noreply, State#state{data=NewData}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},
+	    Console ! {status, "You are dead, type <i>logout</i> to logout."
+		       ++ " Better luck next time!"},
 	    zone:death(Zone, self()),
 	    %% Player dies permanently
 	    playermaster:stop_player(Data#player.name),

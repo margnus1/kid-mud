@@ -8,22 +8,7 @@
 %% @doc Starts a console session to the mud on this node
 %% @spec connect() -> ok
 connect() ->
-    Name = droplast(io:get_line("Name?> ")),
-    case check_name(Name) of
-	{failed, Reason} ->
-	    io:fwrite("~s~n",[Reason]),
-	    connect();
-	ok ->
-            Writer = spawn(fun writer/0),
-            case playermaster:start_player(Name, Writer) of
-                {ok, Server} ->
-                    loop(Server, Writer);
-                login_failed ->
-                    Writer ! plz_die,
-                    io:fwrite("You cannot connect with name \"~s\"~n", [Name]),
-                    connect()
-            end
-    end.
+    connect(node()).
 
 %% @doc Starts a console session to the mud on the node Node
 %% @spec connect(Node::node()) -> ok
@@ -68,17 +53,20 @@ writer() ->
         plz_die ->
             ok;
         {message, Message} -> 
-            io:fwrite("~s~n", [Message]),
+            io:fwrite("~s~n", [striptags(Message)]),
             writer()
     end.
 
 droplast(L) ->
     lists:reverse(tl(lists:reverse(L))).
 
+striptags(S) ->
+    re:replace(S, "<[^>]*>", "", [global]).
+
 check_name(Name) ->
     case re:run(Name, "^.{3,15}$") of
 	{match, _} ->
-	    case re:run(Name, "^.[^ ]*$") of
+	    case re:run(Name, "^.[^\s]*$") of
 		{match, _} ->
 		    ok;
 		nomatch ->

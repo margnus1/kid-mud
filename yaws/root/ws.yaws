@@ -1,4 +1,4 @@
 <erl>
 out(_Args) ->
-           {websocket, ws_test, [{callback, {advanced, {initial, none, <<>>}}}]}.
+           {websocket, ws_client, [{callback, {advanced, {initial, none, <<>>}}}]}.
 </erl>
