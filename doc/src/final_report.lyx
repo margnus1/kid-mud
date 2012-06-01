@@ -836,10 +836,10 @@ Samtidighet
 \end_layout
 
 \begin_layout Standard
-I Erlang så används message passing för att kommunicera mellan processer.
+I Erlang så används meddelandepassning för att kommunicera mellan processer.
  Det är väldigt lättanvänt och vi slipper att fundera på synkronisiering
  med delat minne och liknande problem.
- Med hjälp av OTP Design Principles så har vi delat upp message passing
+ Med hjälp av OTP Design Principles så har vi delat upp meddelandepassningen
  mellan processer i två olika typer.
  
 \end_layout
