@@ -168,8 +168,12 @@ Inledning
 \end_layout
 
 \begin_layout Standard
-Ett MUD (Multi User Dungeon) är ett textbaserat flerspelarspel där spelare
- utför handlingar genom att skriva dem (såsom 
+Ett 
+\emph on
+MUD
+\emph default
+ (Multi User Dungeon) är ett textbaserat flerspelarspel där spelare utför
+ handlingar genom att skriva dem (såsom 
 \begin_inset Quotes sld
 \end_inset
 
@@ -236,7 +240,7 @@ När man loggar in i systemet så anger man namn på den karaktär man vill
  Om karaktären inte finns så skapas den.
  Efter dess så anländer man i en zon.
  När man anländer till en zon så får man en beskrivning av hur zonen ser
- ut, vilka andra spelare och icke-spelare (NPC-er) som står där samt vart
+ ut, vilka andra spelare och icke-spelare, NPC:er, som står där samt vart
  man kan gå (se Figur 
 \begin_inset CommandInset ref
 LatexCommand vref
@@ -453,9 +457,8 @@ Vem
 \end_inset
 
 .
- När man inser att man aldrig kan vinna striden man är i så är det lämpligt
- att fly.
- För att gå till en annan zon så skriver man 
+ När man inser att man aldrig kan vinna striden är det lämpligt att fly.
+ För att gå till en annan zon skriver man 
 \begin_inset Quotes sld
 \end_inset
 
@@ -491,12 +494,17 @@ Programmeringsspråk
 \end_layout
 
 \begin_layout Standard
-Vi valde att skriva systemet i Erlang för att det är ett språk vi trodde
- skulle vara lämpad till att lösa uppgiften så att vi kunde utnyttja oss
- utav samtidighet som uppgiften krävde.
- Fördelarna är att det är väldigt lätt att skriva kod som utnyttjar samtidighet
- och att meddelandepassningen samt de lätta processerna i Erlang fungerar
- väldigt bra till sättet vi valde att lösa problemet på.
+Uppgiften gick ut på att göra ett program som använde sig av samtidighet.
+ Eftersom vi hade fått lära oss om Erlang tidigare i kursen kändes Erlang
+ som ett bra val av språk att skriva programmet i.
+ Ingen i gruppen hade någon erfarenhet av Erlang sedan tidigare.
+\end_layout
+
+\begin_layout Standard
+Fördelarna med Erlang är att det är väldigt lätt att skriva kod som utnyttjar
+ samtidighet och den enkla meddelandepassningen.
+ De lätta processerna i Erlang fungerar väldigt bra till sättet vi valde
+ att lösa problemet på.
  
 \end_layout
 
