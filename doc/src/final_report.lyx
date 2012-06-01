@@ -1264,6 +1264,42 @@ stack trace
  utan någon annan modul kan vara delaktig i det hela.
 \end_layout
 
+\begin_layout Standard
+Testfallen blev lite av våra 
+\begin_inset Quotes sld
+\end_inset
+
+ruttna ägg
+\begin_inset Quotes srd
+\end_inset
+
+ eftersom de flesta blev långa, komplicerade och beroende av flera andra
+ funktioner/moduler.
+ T.ex.
+ ett av testfallen startade upp en hel server, lade in ett antal zoner bara
+ för att testa en funktion.
+\end_layout
+
+\begin_layout Standard
+De vi tyckte blev bra är bland annat användingen av 
+\begin_inset Quotes sld
+\end_inset
+
+gen_server
+\begin_inset Quotes srd
+\end_inset
+
+, vilket gjorde att programmeringen blev mer abstrakt.
+\end_layout
+
+\begin_layout Standard
+Slutresultatet av projektet är vi väldigt nöjda med.
+ Vi fick in den funktionalitet vi ville och allt funkar som det ska.
+ Projektet har flutit på väldigt bra under de veckor vi jobbade med det,
+ vi har inte upplevt att vi fastnat på något som vi inte har kunnat komma
+ vidare från.
+\end_layout
+
 \begin_layout Section
 Installation och fortsatt utveckling
 \end_layout
