@@ -851,12 +851,24 @@ zonemaster
 \emph on
 gb_tree
 \emph default
- för att kunna slå i aktiva zoner efter id.
+ för att kunna slå i aktiva zoner efter id, detta för att förbättra dess
+ prestanda.
 \end_layout
 
 \begin_layout Standard
-Records är praktiska eftersom de går att spara i en mnesia-tabell, och för
- att man kan lägga till fält utan att existerande kod slutar fungera.
+
+\emph on
+Records
+\emph default
+ är en mycket vanlig notation i funktionella språk, som fungerar ungefär
+ som en tupel, men där varje element, 
+\emph on
+fält
+\emph default
+, ges ett namn, och kan plockas ut ur recorden genom att man uppger dess
+ namn.
+ Records är praktiska eftersom de går att spara i en mnesia-tabell, och
+ för att man kan lägga till fält utan att existerande kod slutar fungera.
  Exempelvis används syntaxen 
 \begin_inset Quotes sld
 \end_inset
@@ -878,8 +890,8 @@ State men med fältet players satt till UpdatedPlayers
 \end_inset
 
 .
- Utan records skulle man istället ha skrivit en tupel med tiotals element
- där alla utom ett är detsamma som innan.
+ Utan records skulle man istället skrivit en tupel med tiotals element där
+ alla utom ett är detsamma som innan.
 \end_layout
 
 \begin_layout Standard
