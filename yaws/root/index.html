@@ -17,7 +17,8 @@
 
     var client = {
         connect: function(){
-         this._ws=new WS("ws://" + location.hostname + "/ws.yaws");
+         this._ws=new WS("ws://" + location.hostname + ":" +
+                         location.port + "/ws.yaws");
          this._ws.onopen=this._onopen;
          this._ws.onmessage=this._onmessage;
          this._ws.onclose=this._onclose;
