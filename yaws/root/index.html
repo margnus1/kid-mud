@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+  <title>Kid-MUD</title>
+  <script type="text/javascript">
+     var WS = false;
+     if (window.WebSocket) WS = WebSocket;
+     if (!WS && window.MozWebSocket) WS = MozWebSocket;
+     if (!WS)
+        alert("WebSocket not supported by this browser");
+
+    // Get an Element
+    function $() { return document.getElementById(arguments[0]); }
+    // Get the value of an Element
+    function $F() { return document.getElementById(arguments[0]).value; }
+
+    var client = {
+        connect: function(){
+         this._ws=new WS("ws://" + location.hostname + ":" +
+                         location.port + "/ws.yaws");
+         this._ws.onopen=this._onopen;
+         this._ws.onmessage=this._onmessage;
+         this._ws.onclose=this._onclose;
+        },
+        _onopen: function(){
+          $('connect').className='hidden';
+          $('command').className='';
+          $('phrase').focus();
+          //client._send('client-connected');
+       },
+        _send: function(message){
+           if (this._ws)
+            this._ws.send(message);
+        },
+       chat: function(text) {
+          if (text != null && text.length>0 )
+            client._send(text);
+        },
+        _onmessage: function(m) {
+          if (m.data){
+              var verb = m.data.split(" ")[0];
+              switch(verb) {
+              case "OK":
+                  $('nameprompt').className='hidden';
+                  break;
+              case "ERR":
+              case "LOG":
+                  var text = m.data.substr(4);
+                  var msg=$('msgs');
+                  var spanText = document.createElement('span');
+                  spanText.className='text';
+                  spanText.innerHTML=text.replace(/\n/g, '<br>');
+                  var lineBreak = document.createElement('br');
+                  msg.appendChild(spanText);
+                  msg.appendChild(lineBreak);
+                  msg.scrollTop = msg.scrollHeight;// - msg.clientHeight;
+                  break;
+              case "STATUS":
+                  var text = m.data.substr(7);
+                  $('status').innerHTML = text;
+               }
+          }
+        },
+        _onclose: function(m) {
+          this._ws=null;
+          $('connect').className='';
+          $('command').className='hidden';
+          $('nameprompt').className='';
+          $('msgs').innerHTML='';
+          $('status').innerHTML='';
+        }
+    };
+  </script>
+  <style type='text/css'>
+    .hidden { display: none; }
+    div#msgs { overflow-y: scroll; 
+               height: 200pt;
+               background-color: black;
+               color: #ddd; }
+  </style>
+
+</head>
+<body>
+  <h1>Kid-MUD</h1>
+  <div id="msgs"></div>
+  <div id="connect">
+     <input id='cA' class='button' type='submit' name='connect' value='Connect'/>
+  </div>
+  <span id="status"></span>
+  <br/>
+  <form id="command" class="hidden">
+    <span id="nameprompt">Name:&nbsp;</span><input id='phrase' type='text'/>
+    <input id='sendB' class='button' type='submit' name='connect' value='Send'/>
+  </form>
+
+  <script type='text/javascript'>
+    $('cA').onclick = function(event) { client.connect(); return false; };
+    $('sendB').onclick = function(event) { client.chat($F('phrase')); $('phrase').value=''; $('phrase').focus(); return false; };
+ </script>
+  </body>
+</html>
+

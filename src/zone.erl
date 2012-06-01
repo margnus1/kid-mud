@@ -426,8 +426,8 @@ handle_cast(Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info({'EXIT', _From, _Reason}, State) ->
-    {stop, normal, State};
+handle_info({'EXIT', _From, Reason}, State) ->
+    {stop, Reason, State};
 
 handle_info(Info, State) ->
     io:fwrite("Unknown info to zone ~p: ~p~n", [self(), Info]),
@@ -444,16 +444,19 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, #state{players=Players, npc=NPC, 
-                          dead_npc=DeadNpc, data=Data}) ->
-
-    [player:kick(PlayerPID) || {PlayerPID, _} <- Players],
-    [npc_sup:stop_npc(npc:get_ref(Pid)) || {Pid, _, _} <- NPC],
+terminate(Reason, #state{players=Players, npc=NPC, 
+			 dead_npc=DeadNpc, data=Data}) ->
+    case Reason of 
+	shutdown -> ok;
+	_ ->
+	    [player:kick(PlayerPID) || {PlayerPID, _} <- Players],
+	    [npc_sup:stop_npc(npc:get_ref(Pid)) || {Pid, _, _} <- NPC]
+    end,
     [timer:cancel(Timer) || {_, Timer} <- DeadNpc],
-
+    
     NpcIds = [Id || {_, _, Id} <- NPC],
     DeadTimes = [{dead, RespawnTime} || {RespawnTime, _} <- DeadNpc],
-	   
+    
     database:write_zone(Data#zone{npc=NpcIds ++ DeadTimes}),
     ok.
 

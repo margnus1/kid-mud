@@ -1,0 +1,4 @@
+<erl>
+out(_Args) ->
+           {websocket, ws_client, [{callback, {advanced, {initial, none, <<>>}}}]}.
+</erl>

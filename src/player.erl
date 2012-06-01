@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus LÃ¥ng, Mikael Wiberg, Michael Bergroth and Eric ArnerlÃ¶v
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg, Michael Bergroth and Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -22,7 +22,14 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE). 
+-define(SERVER, ?MODULE).
+
+-record(state, {console, zone, data, combat, status_timer}).
+-type state() :: #state {console :: pid(), 
+                         zone :: pid(), 
+                         data :: player(), 
+                         combat :: {normal, none, none} | {combat, string(), timer:tref()},
+                         status_timer :: timer:tref()}.
 
 %%%===================================================================
 %%% API
@@ -106,7 +113,10 @@ init([Name, Console]) ->
     Zone = zonemaster:get_zone(Data#player.location),
     zone:enter(Zone, self(), Name, login),
     Console ! {message, "Welcome to Kid-MUD!"},
-    {ok, {Console, Zone, Data, {normal, none, none}}}.
+    {ok, StatusTimer} = timer:send_interval(6000, {'$gen_cast', update_status}),
+    gen_server:cast(self(), update_status),
+    {ok, #state{console=Console, zone=Zone, data=Data, 
+                combat={normal, none, none}, status_timer=StatusTimer}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -138,7 +148,8 @@ handle_call(Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({command, Command}, 
-	    State = {Console, Zone, Data, {_, Target, AttackTimer}}) ->
+	    State = #state{console=Console, zone=Zone, data=Data,
+                           combat={_, Target, AttackTimer}}) ->
     case parser:parse(Command) of
 	{go, Direction} ->
 	    case zone:go(Zone, self(), Direction) of
@@ -149,8 +160,8 @@ handle_cast({command, Command},
 		    NewZone = zonemaster:get_zone(Id),
 		    zone:enter(NewZone, self(), Data#player.name, Direction),
 		    timer:cancel(AttackTimer),
-		    {noreply, {Console, NewZone, Data#player{location=Id},
-			       {normal, none, none}}};
+		    {noreply, State#state{zone=NewZone, data=Data#player{location=Id},
+			       combat={normal, none, none}}};
 
 		{error, doesnt_exist} ->
 		    Console ! {message, "You cannot go that way"},
@@ -187,7 +198,7 @@ handle_cast({command, Command},
 	stop ->
 	    Console ! {message , "You stopped all actions"},
 	    timer:cancel(AttackTimer),
-	    {noreply, {Console, Zone, Data, {normal, none, none}}};
+	    {noreply, #state{combat={normal, none, none}}};
 
 
 	{consider,NPC_name} ->
@@ -236,8 +247,8 @@ handle_cast({command, Command},
 				timer:send_interval(2000, {'$gen_cast',
 							   {attack, 
 							    NewTarget}}),
-			    {noreply, {Console, Zone, Data, 
-				       {combat, NewTarget, NewAttackTimer}}}
+			    {noreply, State#state{
+                                        combat={combat, NewTarget, NewAttackTimer}}}
 		    end
 	    end;
 
@@ -246,7 +257,7 @@ handle_cast({command, Command},
 	    {noreply, State}
     end;
 
-handle_cast({attack, Target}, State = {_,Zone,_,_}) ->
+handle_cast({attack, Target}, State = #state{zone=Zone, combat={combat,_,_}}) ->
 
     ToHit = random:uniform(100),
     if ToHit > 20 ->
@@ -259,40 +270,48 @@ handle_cast({attack, Target}, State = {_,Zone,_,_}) ->
     {noreply, State};
 
 handle_cast({stop_attack, ZoneTarget}, State =  
-		{Console, Zone, Data, {_, Target, AttackTimer}}) ->
+		#state{console=Console, combat={_, Target, AttackTimer}}) ->
     if 
 	ZoneTarget =:= Target ->
 	    Console ! {message, "You have stopped attacking"},
 	    timer:cancel(AttackTimer),
-	    {noreply, {Console, Zone, Data, {normal, none, none}}};
+	    {noreply, State#state{combat={normal, none, none}}};
 	ZoneTarget =/= Target ->
 	    {noreply, State}    
     end;
 
-handle_cast({message, Description}, State={Console,_,_,_}) ->
+handle_cast({message, Description}, State=#state{console=Console}) ->
     Console ! {message, Description},
     {noreply, State};
 
-handle_cast(kick, State={Console,_,#player{name=Name},_}) ->
+handle_cast(kick, State=#state{console=Console,data=#player{name=Name}}) ->
     Console ! {message, "You have been kicked!"},
     playermaster:stop_player(Name),
     {noreply, State};
 
-handle_cast({damage, Damage, Attacker}, {Console, Zone, Data, CombatState}) ->
+handle_cast({damage, Damage, Attacker}, 
+            State=#state{console=Console, zone=Zone, data=Data}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
     {_, Health} = NewData#player.health,
     Console ! {message, [Attacker ," hits YOU for damage: ", 
 				 integer_to_list(Damage)]},
     if 	Health > 0.0 ->	    
-	    {noreply, {Console, Zone, NewData, CombatState}};
+            gen_server:cast(self(), update_status),
+	    {noreply, State#state{data=NewData}};
 	Health =< 0.0 ->
 	    Console ! {message, "You are Dead!"},
+	    Console ! {status, "You are dead, type <i>logout</i> to logout."
+		       ++ " Better luck next time!"},
 	    zone:death(Zone, self()),
 	    %% Player dies permanently
 	    playermaster:stop_player(Data#player.name),
-	    {noreply, {Console, Zone, #player{name = Data#player.name}, 
-		       CombatState}}
+	    {noreply, State#state{data   = #player{name = Data#player.name}, 
+                                  combat = {normal, none, none}}}
     end;
+
+handle_cast(update_status, State=#state{console=Console, data=Data}) ->
+    Console ! {status, format_status(Data)},
+    {noreply, State};
 
 handle_cast(Msg, State) ->
     io:fwrite("Unknown cast to player ~p: ~p~n", [self(), Msg]),
@@ -326,8 +345,9 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, {_, _, Data,_}) ->
+terminate(_Reason, #state{data=Data, status_timer=Timer}) ->
     database:write_player(Data),
+    timer:cancel(Timer),
     ok.
 
 %%--------------------------------------------------------------------
@@ -344,6 +364,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+format_status(Data = #player{name=Name}) ->
+    ["Playing as ", Name, " Health: ", 
+     integer_to_list(round(get_health(Data))), " / 100"].
 
 get_health(#player{health={Time, Health}}) ->
     min(Health + timer:now_diff(now(), Time) / 6000000.0, 100.0).
