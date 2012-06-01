@@ -391,7 +391,7 @@ Meddelande
 \end_inset
 
  för att säga saker till andra spelare i samma zon.
- Man kan även prata privat med en godtyckig spelare genom att skriva 
+ Man kan även prata privat med en godtycklig spelare genom att skriva 
 \begin_inset Quotes sld
 \end_inset
 
@@ -643,7 +643,7 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Moduler som kommuniserar och supervisorträd
+Moduler som kommunicerar och supervisorträd
 \begin_inset CommandInset label
 LatexCommand label
 name "fig:moduler"
@@ -701,7 +701,7 @@ När en spelare loggar in ber client playermaster om att få logga in.
  Om det accepteras startas en player-process med hjälp av player_sup som
  ansluts till client.
  Har även en lista över alla inloggade spelare och har funktioner för att
- skicka meddelanden till alla vid speciella händelser samt att vidarebefodra
+ skicka meddelanden till alla vid speciella händelser samt att vidarebefordra
  privata meddelanden.
 \end_layout
 
@@ -723,10 +723,10 @@ zone
 \begin_deeper
 \begin_layout Standard
 zone tar hand om det som rör en specifik zon.
- Den har data såsom närliggande zoners ID och listor över spelare och NPC:s.
+ Den har data såsom närliggande zoners ID och listor över spelare och NPC:er.
  Det är zonen som skickar ut meddelanden till andra spelare som säger vad
  som händer.
- När en zon startas upp startar den alla NPC:s i zonen via npc_sup.
+ När en zon startas upp startar den alla NPC:er i zonen via npc_sup.
 \end_layout
 
 \end_deeper
@@ -759,7 +759,7 @@ npc
 
 \begin_deeper
 \begin_layout Standard
-npc har hand om information om och simulerar specifika NPCs.
+npc har hand om information om och simulerar specifika NPC:er.
 \end_layout
 
 \end_deeper
@@ -791,7 +791,7 @@ database
 \begin_deeper
 \begin_layout Standard
 Gränssnitt mot databasen för systemet som lagrar information om zoner, spelare
- och NPCer.
+ och NPC:er.
  Erbjuder lättanvända metoder för att läsa, skriva och söka i databasen.
  Sköter även att uppdatera databasen med karta (via maploader) och NPC-typer.
  
@@ -835,7 +835,7 @@ Samtidighet
 
 \begin_layout Standard
 I Erlang används meddelandepassning för att kommunicera mellan processer.
- Det är väldigt lättanvänt och vi slipper att fundera på synkronisiering
+ Det är väldigt lättanvänt och vi slipper att fundera på synkronisering
  med delat minne och liknande problem.
  Utifrån designprinciperna ur OTP:n delas meddelandepassningen mellan processer
  upp i två olika typer.
@@ -843,17 +843,24 @@ I Erlang används meddelandepassning för att kommunicera mellan processer.
 \end_layout
 
 \begin_layout Standard
-Den första typen är calls, de ska användas när en process vill ha ett svar
- på sitt meddelande.
+Den första typen är 
+\emph on
+calls
+\emph default
+, de ska användas när en process vill ha ett svar på sitt meddelande.
  Detta garanterar att processen som vi kommunicerar med ska skicka tillbaka
  ett svar direkt efter den har hanterat meddelandet.
  
 \end_layout
 
 \begin_layout Standard
-Den andra typen är casts, de ska användas när en process inte vill ha ett
- svar från processen som den skickar sitt meddelande till.
- Detta leder till att synkronisiering kan hanteras på ett smidigt sätt när
+Den andra typen är 
+\emph on
+casts
+\emph default
+, de ska användas när en process inte vill ha ett svar från processen som
+ den skickar sitt meddelande till.
+ Detta leder till att synkronisering kan hanteras på ett smidigt sätt när
  processer pratar med varandra.
  Vilket i sin tur leder till snabbare och mer robust kommunikation.
  
@@ -861,7 +868,7 @@ Den andra typen är casts, de ska användas när en process inte vill ha ett
 
 \begin_layout Standard
 I våran nuvarande struktur har vi designat koden och modulerna på ett sätt
- som ska förhindra att deadlocks ska uppstå.
+ som ska förhindra att dödlägen ska uppstå.
  Vi använder oss av enkelriktad kommunikation när processer kommunicerar
  med calls, detta gör att vi inte kan få några cirkulära vänteproblem.
  
@@ -872,7 +879,7 @@ Algoritmer och datastrukturer
 \end_layout
 
 \begin_layout Standard
-De datastrukturer som främst använts är erlangs tupler och records.
+De datastrukturer som främst använts är Erlangs tupler och records.
  Även listor har används av till exempel 
 \emph on
 playermaster
@@ -886,7 +893,7 @@ zone
 \emph on
 zonemaster
 \emph default
- används istället ett BBST (balanserat binärt sökträd) ur erlang-modulen
+ används istället ett BBST (balanserat binärt sökträd) ur Erlang-modulen
  
 \emph on
 gb_tree
@@ -905,9 +912,9 @@ Records
 \emph on
 fält
 \emph default
-, ges ett namn, och kan plockas ut ur recorden genom att man uppger dess
+, ges ett namn, och kan plockas ut ur record:en genom att man uppger dess
  namn.
- Records är praktiska eftersom de går att spara i en mnesia-tabell, och
+ Records är praktiska eftersom de går att spara i en Mnesia-tabell, och
  för att man kan lägga till fält utan att existerande kod slutar fungera.
  Exempelvis används syntaxen 
 \begin_inset Quotes sld
@@ -996,7 +1003,7 @@ parser_grammar.peg
 .
  Detta innebär att algoritmen för att tolka spelarkommandon skrivs automatiskt.
  Grammatiken beskriver de kommandon som man kan skriva och hur de skall
- representeras i erlang-data.
+ representeras i Erlang-data.
  Exempelvis är kommandot 
 \begin_inset Quotes sld
 \end_inset
@@ -1053,7 +1060,7 @@ kill
 
  följt av vad som helst.
  De följande två raderna är Erlang, och säger hur det skall representeras
- i erlang-data.
+ i Erlang-data.
  Här binder vi andra delen av kommandot (vad som helst-biten) till Letters,
  och omvandlar det sedan till en sträng, och ger slutligen ett svar på formen
  
@@ -1068,13 +1075,8 @@ Förslag på förbättringar
 \end_layout
 
 \begin_layout Description
-Command
-\begin_inset space ~
-\end_inset
-
-Autocompletion Istället för att behöva skriva all text fullständigt kan
- det vara behändigt att lägga till ett system som fyller i resten av ett
- t ex.
+Autoförslag Istället för att behöva skriva all text fullständigt kan det
+ vara behändigt att lägga till ett system som fyller i resten av ett t ex.
  kommando som är halvt skrivet.
  Detta är bara tillgängligt om det endast finns ett unikt 
 \begin_inset Quotes sld
@@ -1088,7 +1090,7 @@ slut
 \end_layout
 
 \begin_layout Description
-Nedstänging
+Nedstängning
 \begin_inset space ~
 \end_inset
 
@@ -1097,9 +1099,9 @@ av
 \end_inset
 
 server När man inaktiverar servern så skall alla spelare som är inloggade
- få ett medelande att server håller på att stängas ner och därför kommer
+ få ett meddelande att server håller på att stängas ner och därför kommer
  de loggas ut om x antal sekunder.
- Sedan sparars världen och användaren kan ansluta till servern och komma
+ Sedan sparas världen och användaren kan ansluta till servern och komma
  till där dom var precis innan servern gick ner.
 \end_layout
 
@@ -1124,16 +1126,16 @@ typer
 \begin_layout Description
 Inloggningslösenord Varje spelare får välja ett lösenord som de skall använda
  för att logga in.
- Detta för att unvika att oönskade personer får tillträde till karaktärer
+ Detta för att undvika att oönskade personer får tillträde till karaktärer
  de inte får använda.
 \end_layout
 
 \begin_layout Description
-Färdighetssystem För att göra allt mer intresant skulle ett system där spelaren
- kan utvecklas och lära sig nya färdigheter.
+Färdighetssystem För att göra allt mer intressant skulle ett system där
+ spelaren kan utvecklas och lära sig nya färdigheter.
  Exempel på färdigheter skulle kunna vara att slå snabbare med ett svärd
  eller lära sig att använda en yxa på ett effektivt sätt.
- Detta kommer göra att strider blir mer intresanta och mindre enformiga.
+ Detta kommer göra att strider blir mer intressanta och mindre enformiga.
 \end_layout
 
 \begin_layout Description
@@ -1141,7 +1143,7 @@ Personifiera
 \begin_inset space ~
 \end_inset
 
-karaktärer För att unvika att alla spelare ser ungefär 
+karaktärer För att undvika att alla spelare ser ungefär 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1171,33 +1173,14 @@ name "sec:Reflektion"
 \begin_layout Standard
 Detta projekt har framförallt gett oss en fördjupning i Erlang men även
  hur det är att arbeta i grupp.
- Vi valde projekt genom att först utföra en 
-\begin_inset Quotes sld
-\end_inset
-
-brainstorm
-\begin_inset Quotes srd
-\end_inset
-
- och sedan bestämde vi oss för de tre idéerna som vi tyckte var mest intresanta.
+ Vi valde projekt genom att först utföra en brainstorming och sedan bestämde
+ vi oss för de tre idéerna som vi tyckte var mest intressanta.
  En stor fördel med att göra ett 
-\begin_inset Quotes sld
-\end_inset
-
+\emph on
 MUD
-\begin_inset Quotes srd
-\end_inset
-
- är att det är väldigt lätt att 
-\begin_inset Quotes sld
-\end_inset
-
-skala
-\begin_inset Quotes srd
-\end_inset
-
-, alltså lätt att relativt snabbt få en fungerande grund men även lätt att
- bygga vidare på.
+\emph default
+ är att det är väldigt lätt att skala, alltså lätt att relativt snabbt få
+ en fungerande grund men även lätt att bygga vidare på.
 \end_layout
 
 \begin_layout Standard
@@ -1208,15 +1191,8 @@ Vi valde att sitta tillsammans när vi jobbade eftersom det är väldigt smidigt
 \end_layout
 
 \begin_layout Standard
-I början delade vi upp arbetet så att varje person fick var sin 
-\begin_inset Quotes sld
-\end_inset
-
-modul
-\begin_inset Quotes srd
-\end_inset
-
- att fokusera sig på.
+I början delade vi upp arbetet så att varje person fick var sin modul att
+ fokusera sig på.
  Vi hade förbestämt vad varje modul skulle innehålla för funktionalitet.
  Problemet med detta var att vissa moduler krävde mindre arbete än andra,
  vilket ledde till att ibland så blev det en del väntande på att en viss
@@ -1224,7 +1200,7 @@ modul
  En förbättring på detta skulle kunna vara att lägga lite mer tid på att
  uppskatta hur lång tid olika delar tar att implementera.
  När grundmodulerna var klara satte vi oss ner och brainstormade om vilka
- nya funktionaliteter vi vill implementera.
+ nya funktionaliteter vi ville implementera.
  Vi valde sedan ut de funktioner som vi tyckte var viktigaste för 
 \begin_inset Quotes sld
 \end_inset
@@ -1248,25 +1224,17 @@ milestone 2
 \begin_layout Standard
 Det som har vart svårt med projektet är att debugga och göra testfall.
  Detta eftersom att det mesta körs 
-\begin_inset Quotes sld
-\end_inset
-
+\emph on
 samtidigt
-\begin_inset Quotes srd
-\end_inset
-
+\emph default
  och när man får ett fel så kan det vara svårt att lokalisera precis vart
  felet uppstår.
  Detta eftersom att det inte finns någon så kallad 
-\begin_inset Quotes sld
-\end_inset
-
+\emph on
 stack trace
-\begin_inset Quotes srd
-\end_inset
-
+\emph default
 , vilket gör att man bara ser vilken modul som har krashat.
- Problemet där kan vara att den modul som krashade står inte själv för krashen
+ Problemet där kan vara att den modul som krashade står inte själv för kraschen
  utan någon annan modul kan vara delaktig i det hela.
 \end_layout
 
@@ -1287,14 +1255,10 @@ ruttna ägg
 \end_layout
 
 \begin_layout Standard
-De vi tyckte blev bra är bland annat användingen av 
-\begin_inset Quotes sld
-\end_inset
-
+De vi tyckte blev bra är bland annat användningen av 
+\emph on
 gen_server
-\begin_inset Quotes srd
-\end_inset
-
+\emph default
 , vilket gjorde att programmeringen blev mer abstrakt.
 \end_layout
 
@@ -1583,7 +1547,7 @@ make test
 .
  Dokumentationsgenerering finns det också stöd av i form av samt EDoc-kommentare
 r.
- Den gerereras med kommandot 
+ Den genereras med kommandot 
 \begin_inset Quotes sld
 \end_inset
 
@@ -1636,7 +1600,7 @@ Node
 \begin_inset Quotes srd
 \end_inset
 
- är namnet på den erlang-nod som kör servern, vanligtvis en atom på formen
+ är namnet på den Erlang-nod som kör servern, vanligtvis en atom på formen
  kidserver@Server där 
 \begin_inset Quotes sld
 \end_inset
