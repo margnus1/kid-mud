@@ -198,7 +198,7 @@ handle_cast({command, Command},
 	stop ->
 	    Console ! {message , "You stopped all actions"},
 	    timer:cancel(AttackTimer),
-	    {noreply, #state{combat={normal, none, none}}};
+	    {noreply, State#state{combat={normal, none, none}}};
 
 
 	{consider,NPC_name} ->
