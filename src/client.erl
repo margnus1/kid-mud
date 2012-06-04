@@ -19,7 +19,7 @@ connect(Node) ->
 	    io:fwrite("~s~n",[Reason]),
 	    connect(Node);
 	ok ->
-            Writer = spawn(fun writer/0),
+            Writer = spawn_link(fun writer/0),
             spawn(Node, client, remote, [self(), Name, Writer]),
             receive 
                 {server, {ok, Server}} -> 
@@ -40,6 +40,7 @@ remote(Caller, Name, Writer) ->
 loop(Server, Writer) ->
     case io:get_line("?> ") of 
         "logout\n" -> 
+	    unlink(Writer),
             Writer ! plz_die,
             player:command(Server, "logout"),
             ok;

@@ -109,6 +109,7 @@ stop_attack(Player, Target) ->
 %%--------------------------------------------------------------------
 init([Name, Console]) ->
     process_flag(trap_exit, true),
+    link(Console),
     Data = database:read_player(Name),
     Zone = zonemaster:get_zone(Data#player.location),
     zone:enter(Zone, self(), Name, login),
@@ -327,6 +328,10 @@ handle_cast(Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info({'EXIT', Console, _Reason}, State = #state{console=Console}) ->
+    command(self(), "logout"),
+    {noreply, State};
+
 handle_info({'EXIT', _From, _Reason}, State) ->
     {stop, normal, State};
 
@@ -345,7 +350,8 @@ handle_info(Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, #state{data=Data, status_timer=Timer}) ->
+terminate(_Reason, #state{console=Console, data=Data, status_timer=Timer}) ->
+    unlink(Console),
     database:write_player(Data),
     timer:cancel(Timer),
     ok.
