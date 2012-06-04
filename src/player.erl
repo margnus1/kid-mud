@@ -257,7 +257,7 @@ handle_cast({command, Command},
 	    {noreply, State}
     end;
 
-handle_cast({attack, Target}, State = #state{zone=Zone, combat={combat,_,_}}) ->
+handle_cast({attack, Target}, State = #state{zone=Zone, combat={combat,Target,_}}) ->
 
     ToHit = random:uniform(100),
     if ToHit > 20 ->
@@ -385,6 +385,8 @@ fetch() ->
     receive
         Anything ->
             Anything
+    after 100 ->
+	    no_message
     end.
 
 %% @hidden
@@ -399,46 +401,47 @@ player_test_() ->
     {setup, fun test_setup/0, 
      [
       fun () ->		  
-	      ?assertEqual({noreply, {self(),what,ever,ever}},
-			   handle_cast({message, "foo"}, 
-				       {self(),what,ever,ever})),
+	      State = #state{console=self(), _=we},
+	      ?assertEqual({noreply, State},
+			   handle_cast({message, "foo"}, State)),
 	      ?assertEqual({message, "foo"}, fetch()),
 	      flush()
       end,
       fun () ->
-	      Data = #player{name = "gunnar"},
- 	      ?assertEqual({noreply, {self(),what,Data,ever}}, 
-			   handle_cast(kick, {self(),what,Data,ever})),
+	      State = #state{console=self(), data=#player{name = "gunnar"}, _=we},
+ 	      ?assertEqual({noreply, State}, 
+			   handle_cast(kick, State)),
  	      ?assertEqual(fetch(), {message, "You have been kicked!"}),
 	      flush()
       end,
       fun () ->
 	      Data = #player{name="foo"},
-	      Value = handle_cast({damage, 110, "attacker"},
-				  {self(), self(),Data,whatever}),
-	      NewData = element(3, element(2, Value)),
+	      State = #state{console=self(), zone=self(), data=Data, 
+			     combat={normal, none, none}, _=we},
+	      Value = handle_cast({damage, 110, "attacker"}, State),
+	      {noreply, #state{data=NewData}} = Value,
 	      ?assertNotEqual(Data, NewData),
 	      ?assertEqual(Data#player.name, NewData#player.name),
-	      ?assertEqual({noreply, {self(), self(), NewData, whatever}},
-			   Value),
+	      ?assertEqual({noreply, State#state{data=NewData}}, Value),
 	      ?assertEqual({message, ["attacker", " hits YOU for damage: ",
 				     "110"]}, fetch()),	      
 	      ?assertEqual({message, "You are Dead!"}, fetch()),
+	      ?assertMatch({status, [$Y,$o,$u,$ ,$a,$r,$e,$ ,$d,$e,$a,$d|_]}, fetch()),
 	      ?assertEqual({'$gen_cast',{death,self()}}, fetch()),
 	      flush()
       end,
       fun () ->
- 	      ?assertEqual({noreply, {what,self(),ever,ever}}, 
-			   handle_cast({attack, "Findus"}, 
-				       {what,self(),ever,ever})),
+	      State = #state{zone=self(), combat={combat, "Findus", we}},
+	      ?assertEqual({noreply, State}, 
+			   handle_cast({attack, "Findus"}, State)),
  	      ?assertEqual({'$gen_cast', {attack, self(), "Findus", 14}}, fetch()),
 	      flush()
       end,     
       fun () ->
 	      Data = #player{name = "Pontus"},
-	      NewData = element(3,element(2,handle_cast({damage, 20, "hanna"},
-							{self(), self(), 
-							 Data, ever}))),
+	      State = #state{console=self(), zone=self(), data=Data, _=we},
+	      {noreply, #state{data=NewData}} = 
+		  handle_cast({damage, 20, "hanna"}, State),
 	      ?assertEqual(round(element(2, NewData#player.health)), 80),
 	      ?assertEqual({message, ["hanna"," hits YOU for damage: ","20"]},
 			   fetch()),
@@ -452,6 +455,7 @@ player_test_() ->
 	      %% requires some of the other modules to work properly
 	      %% Test for handle_cast({command, "go north"}, 
 	      %%                       {pid(),pid(),player()}
+	      %% @todo Move to a integration testing suite
 	      mnesia:start(),
 	      application:start(kidmud),
 	      database:write_zone(#zone{id=0, exits=[{north, 1}]}),
@@ -459,13 +463,11 @@ player_test_() ->
 	      Data = #player{name = "foo"},
 	      Zone = zonemaster:get_zone(Data#player.location),
 	      zone:enter(Zone, self(), "foo", login),
-	      ?assertEqual({noreply, {self(), zonemaster:get_zone(1), 
-				      #player{name="foo",location=1, 
-					      health=Data#player.health},
-				      {normal,none,none}}}, 
-			   handle_cast({command, "go north"}, 
-				       {self(), Zone, Data, {normal,none,none}})
-			  ),
+	      State = #state{console=self(), zone=Zone, data=Data,
+			     combat={normal, none, none}, _=we},
+	      ?assertEqual({noreply, State#state{zone=zonemaster:get_zone(1),
+						 data=Data#player{location=1}}}, 
+			   handle_cast({command, "go north"}, State)),
 	      fetch(),
 	      fetch(),
 	      ?assertEqual({message, "You successfully moved north"}, fetch()),

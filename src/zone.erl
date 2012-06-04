@@ -580,7 +580,6 @@ get_name(PID, #state{players=Players, npc=NPC}) ->
 	    {player, Name}
     end.
 
-
 %% @doc Constructs an "arrival" message
 format_arrival(north) -> " arrives from south";
 format_arrival(east)  -> " arrives from west";
@@ -601,12 +600,20 @@ random_element(List) ->
 
 test_setup() ->
     database_setup(),
+    case whereis(zonemaster) of 
+	undefined -> ok;
+	_ -> unregister(zonemaster)
+    end,
     register(zonemaster, self()),
+	     
     ok.
 
 database_setup() ->
     mnesia:start(),
     database:create_tables([]).
+
+normalise_message(Message) ->
+    unicode:characters_to_list(re:replace(Message, "<[^>]*>", "", [global])).
 
 %% @hidden
 fetch() ->
@@ -678,7 +685,7 @@ zone_enter_test_() ->
 		   handle_cast({enter, self(), "Gunde", south}, State14)),
      fun () ->
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("A room!", lists:flatten(Message)),
+	     ?assertEqual("A room!", normalise_message(Message)),
 	     flush() % exits, already tested
      end,
 
@@ -689,7 +696,7 @@ zone_enter_test_() ->
 
 	     {'$gen_cast', {message, Message}} = fetch(),
 	     ?assertEqual("A room!\nHere stands a Goblin\nHere stands gg",
-			  lists:flatten(Message)),
+			  normalise_message(Message)),
 	     fetch(), % exits, already tested
 
 	     ?assertEqual({'$gen_cast',
@@ -705,7 +712,7 @@ zone_look_test_() ->
 			 #state{players=[], 
 				data=#zone{id=14, desc="A room"}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("A room", lists:flatten(Message))
+	     ?assertEqual("A room", normalise_message(Message))
      end,
      ?_assertEqual({'$gen_cast', {message, "You see no exit"}}, fetch()),
      fun () ->
@@ -714,7 +721,7 @@ zone_look_test_() ->
 				data = #zone{id=14, desc="A small room", 
 					     exits=[{north, -1}]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("A small room\nHere stands B", lists:flatten(Message))
+	     ?assertEqual("A small room\nHere stands B", normalise_message(Message))
      end,
      ?_assertEqual({'$gen_cast', 
 		    {message, ["There is an exit to the ", "north"]}}, fetch()),
@@ -726,7 +733,7 @@ zone_look_test_() ->
 		      data=#zone{id=14, desc="A room",
 				 exits=[{north, -1},{south, 3}]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("A room\nHere stands B", lists:flatten(Message))
+	     ?assertEqual("A room\nHere stands B", normalise_message(Message))
      end,
      ?_assertEqual(
 	{'$gen_cast', 
@@ -746,15 +753,15 @@ zone_logout_test_() ->
 	       ?assertEqual({'$gen_cast', {message, ["C", " has logged out"]}},
 			    fetch())
      end,
-
-     ?_assertEqual({noreply, #state{players=[], data=#zone{id=8, exits=[]}}},
-		   handle_cast({logout, self()}, 
-			       #state{players=[{self(), "Arne"}],
-				      data=#zone{id=8, exits=[]}})),
+     fun () ->
+	     ?assertEqual({noreply, #state{players=[], data=#zone{id=8, exits=[]}}},
+			  handle_cast({logout, self()}, 
+				      #state{players=[{self(), "Arne"}],
+					     data=#zone{id=8, exits=[]}})),
      
-     ?_assertEqual({'$gen_cast', {zone_inactive, 8}},
-		   fetch())
-    ].
+	     ?assertEqual({'$gen_cast', {zone_inactive, 8}},
+			  fetch())
+     end].
 
 zone_kick_test_() ->
     [fun () -> handle_cast({kick, "Timmy"}, 
@@ -773,7 +780,7 @@ zone_attack_test_() ->
 				data=#zone{id=5, exits=[]}}),
 
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("You hit Kurt for 1", lists:flatten(Message)),
+	     ?assertEqual("You hit Kurt for 1", normalise_message(Message)),
 
 	     ?assertEqual({'$gen_cast', {damage, 1, "Kurt"}}, fetch())
      end,
@@ -786,7 +793,7 @@ zone_attack_test_() ->
 				npc=[{self(), "Goblin", 4}]}),
 
 	     {'$gen_cast', {message, Message2}} = fetch(),
-	     ?assertEqual("You hit Goblin for 10", lists:flatten(Message2)),
+	     ?assertEqual("You hit Goblin for 10", normalise_message(Message2)),
 
 	     ?assertEqual({'$gen_cast', {damage, 10, "Kurt"}}, fetch())
 
@@ -806,13 +813,13 @@ zone_attack_test_() ->
 					 {self(),"Dingo"}, {self(), "Observer"}],
 				data=#zone{id=5, exits=[]}}),
 	     {'$gen_cast', {message, Message}} = fetch(),
-	     ?assertEqual("Kurt misses Dingo", lists:flatten(Message)),
+	     ?assertEqual("Kurt misses Dingo", normalise_message(Message)),
 	     {'$gen_cast', {message, Message2}} = fetch(),
 	     ?assertEqual("You miss your attack on Dingo", 
-			  lists:flatten(Message2)),
+			  normalise_message(Message2)),
 	     {'$gen_cast', {message, Message3}} = fetch(),
 	     ?assertEqual("Kurt misses his attack on YOU", 
-			  lists:flatten(Message3))
+			  normalise_message(Message3))
 
      end].
 
