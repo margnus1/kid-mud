@@ -1,4 +1,4 @@
-%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arn\erlöv
+%% Copyright (c) 2012 Magnus Lång, Mikael Wiberg and Michael Bergroth, Eric Arnerlöv
 %% See the file license.txt for copying permission.
 
 %%%-------------------------------------------------------------------
@@ -13,7 +13,7 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/0, start/2, stop/1]).
 
 %%%===================================================================
 %%% Application callbacks
@@ -44,6 +44,21 @@ start(_StartType, _StartArgs) ->
 	Error ->
 	    Error
 		end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% This function is used for starting Kid-MUD in a yaws instance with
+%% the runmod argument. It will wait until mnesia starts and then
+%% start Kid-MUD.
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    case application:start(kidmud) of
+	{error,{not_started,mnesia}} ->
+	    timer:apply_after(50, kidmud, start, []),
+	    {warning, "Waiting for mnesia to start..."};
+	Answer -> Answer
+    end.
 
 %%--------------------------------------------------------------------
 %% @private

@@ -42,6 +42,10 @@ start_client: all
 start_server: all
 	erl -name kidserver -setcookie kid-mud -pa ebin -mnesia dir database -eval "application:start(mnesia)" -eval "application:start(kidmud)"
 
+start_webserver: all
+	mkdir -p yaws/logs yaws/include
+	cd yaws; ./start_here.sh
+
 setup: all
 	mkdir database
 	erl -name kidserver -noshell -pa ebin -mnesia dir database -s database setup -s erlang halt

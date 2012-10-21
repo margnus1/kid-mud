@@ -138,8 +138,8 @@ handle_message(#ws_frame_info{opcode=close,
 handle_message(#ws_frame_info{}, Acc) ->
     {noreply, Acc}.
 
-input({text, Name}, initial, Socket) ->
-    Relay = spawn(?MODULE, relay, [Socket]),
+input({text, Name}, initial, _Socket) ->
+    Relay = spawn(?MODULE, relay, [self()]),
     AsciiName = unicode:characters_to_list(Name),
     case check_name(AsciiName) of
 	ok ->
