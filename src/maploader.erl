@@ -14,7 +14,7 @@
 
 %% @doc Loads the [first of the] specified file[s that exists] and
 %% inserts it into the database
--spec load([file:name()] | file:name()) -> ok | {error, posix()}.
+-spec load([file:name()] | file:name()) -> ok | {error, file:posix()}.
 load([Filename|More]) when is_list(Filename) or is_binary(Filename) ->
     case file:open(Filename, [read]) of
 	{ok, Device} ->
