@@ -250,13 +250,14 @@ handle_call({go, PlayerPID, Direction},
 	[] ->
 	    {reply, {error, doesnt_exist}, State};
 
-	[{_, DirectionID}] -> 
+	[{_, DirectionID}] ->
             UpdatedPlayers = lists:keydelete(PlayerPID, 1, Players),
             inactivate_if_empty(UpdatedPlayers, Id),
             
             {player, Name} = get_name(PlayerPID, State),
-            message_players(UpdatedPlayers, [Name, " has left ",
-                                             atom_to_list(Direction)]),
+            message_players(UpdatedPlayers,
+			    [colour:text(dodgerblue, Name)
+			     , " has left ", atom_to_list(Direction)]),
 
             {reply, {ok, DirectionID}, State#state{players=UpdatedPlayers}}
     end;
@@ -297,7 +298,8 @@ handle_cast({enter, PlayerPID, Name, Direction},
     player:message(PlayerPID, look_message(State)),
     player:message(PlayerPID, exits_message(Exits)),
 
-    message_players(Players, [Name, format_arrival(Direction)]),
+    message_players(Players, [colour:text(dodgerblue, Name),
+			      format_arrival(Direction)]),
     [npc:player_enter(NpcPid, Name) || {NpcPid, _, _} <- NPC],
 
     UpdatedPlayers = [{PlayerPID, Name} | Players],
@@ -494,7 +496,8 @@ logout_player(PlayerPID, State = #state{players=Players, data=#zone{id=Id}}) ->
     inactivate_if_empty(UpdatedPlayers, Id),
     
     {player, Name} = get_name(PlayerPID, State),
-    message_players(UpdatedPlayers, [Name, " has logged out"]),
+    message_players(UpdatedPlayers, [colour:text(dodgerblue, Name)
+				     , " has logged out"]),
 
     {noreply, State#state{players=UpdatedPlayers}}.
 
@@ -517,7 +520,7 @@ message_players([], _) -> ok.
 find_target(Target, #state{players=Players, npc=NPC}) ->
     case lists:keyfind(Target, 2, NPC) of
 	false ->
-	    case lists:keyfind(Target, 2, Players) of	
+	    case lists:keyfind(Target, 2, Players) of
 		false ->
 		    false;
 		{Pid, _} ->
@@ -545,9 +548,10 @@ look_message(#state{players=Players, npc=NPC, data=Data}) ->
     [Data#zone.desc,
      lists:map(fun({_, Name, _}) -> ["\n", "Here stands a ", Name] end,
      	       NPC),
-     colour:text(blue, lists:map(fun({_, Name}) -> 
-					 ["\n", "Here stands ", Name] end,
-				 Players))]. %% ++
+     lists:map(fun({_, Name}) ->
+		       ["\n", "Here stands ",
+			colour:text(dodgerblue, Name)] end,
+	       Players)]. %% ++
       %% lists:map(fun({Amount, Item}) -> "Here lies " ++ 
       %% 		format_item(Amount, Item) end, Zone#zone.items),
 

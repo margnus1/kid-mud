@@ -246,7 +246,7 @@ handle_cast({command, Command},
 			    timer:cancel(AttackTimer),
 			    {_,NewAttackTimer} = 
 				timer:send_interval(2000, {'$gen_cast',
-							   {attack, 
+							   {attack,
 							    NewTarget}}),
 			    {noreply, State#state{
                                         combat={combat, NewTarget, NewAttackTimer}}}
@@ -294,8 +294,8 @@ handle_cast({damage, Damage, Attacker},
             State=#state{console=Console, zone=Zone, data=Data}) ->
     NewData = Data#player{health={now(), get_health(Data) - Damage}},
     {_, Health} = NewData#player.health,
-    Console ! {message, [Attacker ," hits YOU for damage: ", 
-				 integer_to_list(Damage)]},
+    Console ! {message, [Attacker, " hits YOU for damage: ",
+			 colour:text(red, integer_to_list(Damage))]},
     if 	Health > 0.0 ->	    
             gen_server:cast(self(), update_status),
 	    {noreply, State#state{data=NewData}};
