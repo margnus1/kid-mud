@@ -97,7 +97,7 @@ get_npc_names() ->
 init() ->
     create_tables([{disc_copies, [node()]}]),
     mnesia:wait_for_tables([player, zone], 2000),
-    maploader:load("priv/map"),
+    maploader:load(["priv/map", "../priv/map", "/var/kidmud/map"]),
     database:write_npc(#npc{id=1, name="Rabbit",       level=1, habitat=forest, disp=neutral, damage=1, health=20}),
     database:write_npc(#npc{id=2, name="Goblin",       level=2, habitat=forest, disp=neutral, damage=2, health=30}),
     database:write_npc(#npc{id=3, name="Goblin",       level=4, habitat=forest, disp=hostile, damage=4, health=35}),

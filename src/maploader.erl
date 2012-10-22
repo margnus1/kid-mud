@@ -12,13 +12,23 @@
 -type room2() :: {integer(), {integer(), integer()}, npc:habitat(),
 		  string(), exits()}.
 
-%% @doc Loads the mapfile Filename and inserts it into the database
--spec load(file:name()) -> ok.
+%% @doc Loads the [first of the] specified file[s that exists] and
+%% inserts it into the database
+-spec load([file:name()] | file:name()) -> ok | {error, posix()}.
+load([Filename|More]) when is_list(Filename) or is_binary(Filename) ->
+    case file:open(Filename, [read]) of
+	{ok, Device} ->
+	    Rooms = parse(Device, 0, []),
+	    Zones = prepare_exits(Rooms, Rooms, []),
+	    insert_zones(Zones);
+	E_R ->
+	    case More of
+		[] -> E_R;
+		_ -> load(More)
+	    end
+    end;
 load(Filename) ->
-    {ok, Device} = file:open(Filename, [read]),
-    Rooms = parse(Device, 0, []),
-    Zones = prepare_exits(Rooms, Rooms, []),
-    insert_zones(Zones).
+    load([Filename]).
 
 %% @doc Insert the zones Zones into the database
 -spec insert_zones([room2()]) -> ok.
