@@ -43,8 +43,9 @@ start_server: all
 	erl -name kidserver -setcookie kid-mud -pa ebin -mnesia dir database -eval "application:start(mnesia)" -eval "application:start(kidmud)"
 
 start_webserver: all
-	mkdir -p yaws/logs yaws/include
-	cd yaws; ./start_here.sh
+	mkdir -p yaws_logs
+	@echo "The webserver will listen to port 8080"
+	yaws -i --conf yaws.conf --name kidserver --mnesiadir database
 
 setup: all
 	mkdir database
